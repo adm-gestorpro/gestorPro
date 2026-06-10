@@ -19,6 +19,7 @@ django-webpush==0.3.6
 djlint==1.36.4
 EditorConfig==0.17.1
 frozenlist==1.8.0
+gunicorn==26.0.0
 http_ece==1.2.1
 idna==3.11
 jsbeautifier==1.15.4
@@ -26,6 +27,7 @@ json5==0.14.0
 load-dotenv==0.1.0
 MarkupSafe==3.0.3
 multidict==6.7.1
+packaging==26.2
 pathspec==1.0.4
 propcache==0.5.2
 psycopg-binary==3.3.4
