@@ -1,0 +1,38 @@
+{
+  "id": "/",
+  "name": "GestorPro",
+  "short_name": "GestorPro",
+  "description": "Plataforma avançada de gestão comercial e SaaS.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/static/img/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/img/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/static/img/screenshot-mobile.png",
+      "sizes": "320x320",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "GestorPro Mobile"
+    },
+    {
+      "src": "/static/img/screenshot-desktop.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "GestorPro Desktop"
+    }
+  ]
+}

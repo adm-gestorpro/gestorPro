@@ -1,0 +1,15 @@
+#Arquivo de dados sensíveis
+.env
+
+#Arquivo de banco de dados teste
+db.sqlite3
+
+#Retirando todos os arquivos de migração django
+*.log
+*.pot
+*.pyc
+*.pem
+__pycache__
+media
+*/migrations/*.py
+!*/migrations/__init__.py

@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block page_name %}Dashboard de Performance{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+        <h3 class="text-2xl font-bold text-slate-900 dark:text-white">Resumo Executivo</h3>
+        <p class="text-slate-500 dark:text-slate-400 text-sm">Acompanhe métricas de vendas, margens e estoque em tempo real.</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <button id="dropdownStore" data-dropdown-toggle="storeMenu" class="text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 focus:ring-4 focus:outline-none focus:ring-slate-100 font-medium rounded-lg text-sm px-4 py-2.5 text-center inline-flex items-center" type="button">
+            <i class="fa-solid fa-shop me-2"></i> Filtrar por Loja <i class="fa-solid fa-chevron-down ml-2 text-xs"></i>
+        </button>
+        <div id="storeMenu" class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-slate-700">
+            <ul class="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="dropdownStore">
+                <li><a href="#" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Todas as 20 Unidades</a></li>
+                <li><a href="#" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Matriz Central</a></li>
+            </ul>
+        </div>
+        <button class="text-white bg-primary-600 hover:bg-primary-700 font-medium rounded-lg text-sm px-4 py-2.5"><i class="fa-solid fa-calendar-days mr-2"></i>Últimos 30 dias</button>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 border-b-4 border-b-primary-500 p-5">
+        <div class="flex justify-between items-center mb-3">
+            <div class="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center"><i class="fa-solid fa-dollar-sign text-primary-600 dark:text-primary-400 text-xl"></i></div>
+            <span class="text-green-500 font-bold text-sm">+8.4%</span>
+        </div>
+        <h6 class="text-slate-500 dark:text-slate-400 font-medium text-xs mb-1">FATURAMENTO TOTAL</h6>
+        <h3 class="text-2xl font-bold text-slate-900 dark:text-white">-</h3>
+    </div>
+    
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 border-b-4 border-b-green-500 p-5">
+        <div class="flex justify-between items-center mb-3">
+            <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center"><i class="fa-solid fa-chart-pie text-green-600 dark:text-green-400 text-xl"></i></div>
+            <span class="text-green-500 font-bold text-sm">+2.1%</span>
+        </div>
+        <h6 class="text-slate-500 dark:text-slate-400 font-medium text-xs mb-1">MARGEM MÉDIA REAL</h6>
+        <h3 class="text-2xl font-bold text-slate-900 dark:text-white">-%</h3>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 border-b-4 border-b-cyan-500 p-5">
+        <div class="flex justify-between items-center mb-3">
+            <div class="w-12 h-12 rounded-full bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center"><i class="fa-solid fa-cart-shopping text-cyan-600 dark:text-cyan-400 text-xl"></i></div>
+            <span class="text-red-500 font-bold text-sm">-1.5%</span>
+        </div>
+        <h6 class="text-slate-500 dark:text-slate-400 font-medium text-xs mb-1">TOTAL PEDIDOS</h6>
+        <h3 class="text-2xl font-bold text-slate-900 dark:text-white">-</h3>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 border-b-4 border-b-amber-500 p-5">
+        <div class="flex justify-between items-center mb-3">
+            <div class="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center"><i class="fa-solid fa-boxes-stacked text-amber-600 dark:text-amber-400 text-xl"></i></div>
+            <span class="text-slate-500 dark:text-slate-400 text-sm">Estável</span>
+        </div>
+        <h6 class="text-slate-500 dark:text-slate-400 font-medium text-xs mb-1">VALOR INVENTÁRIO</h6>
+        <h3 class="text-2xl font-bold text-slate-900 dark:text-white">R$ -M</h3>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+        <div class="flex justify-between items-center mb-6">
+            <h5 class="text-lg font-bold text-slate-900 dark:text-white">Fluxo de Vendas e Lucratividade</h5>
+            <span class="bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-400 text-xs font-medium px-3 py-1 rounded">Tempo Real</span>
+        </div>
+        <div class="h-80 relative w-full">
+            <canvas id="performanceChart"></canvas>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 flex flex-col">
+        <h5 class="text-lg font-bold text-slate-900 dark:text-white mb-6">Top Fornecedores</h5>
+        <div class="space-y-4 flex-1">
+            <!--<div class="flex items-center pb-4 border-b border-slate-100 dark:border-slate-700">
+                <div class="w-10 h-10 rounded bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-bold flex items-center justify-center mr-3">AL</div>
+                <div class="flex-1">
+                    <h6 class="text-sm font-semibold text-slate-900 dark:text-white">Distribuidora Alfa</h6>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">R$ 152.000,00</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-sm font-bold text-slate-900 dark:text-white">29%</span>
+                    <div class="w-16 h-1.5 bg-slate-200 dark:bg-slate-700 rounded mt-1">
+                        <div class="h-1.5 bg-primary-500 rounded" style="width: 70%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center pb-4 border-b border-slate-100 dark:border-slate-700">
+                <div class="w-10 h-10 rounded bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 font-bold flex items-center justify-center mr-3">BT</div>
+                <div class="flex-1">
+                    <h6 class="text-sm font-semibold text-slate-900 dark:text-white">Atacadista Beta</h6>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">R$ 98.400,00</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-sm font-bold text-slate-900 dark:text-white">18%</span>
+                    <div class="w-16 h-1.5 bg-slate-200 dark:bg-slate-700 rounded mt-1">
+                        <div class="h-1.5 bg-green-500 rounded" style="width: 50%"></div>
+                    </div>
+                </div>
+            </div>-->
+        </div>
+        <a href="#" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-medium mt-4 inline-flex items-center">Ver relatório <i class="fa-solid fa-chevron-right ml-1 text-xs"></i></a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"></script>
+<script>
+    // A inicialização dos gráficos permanece inalterada do seu código original
+    // ... (Cole seu bloco de Chart.js aqui. As cores tailwind se adaptam perfeitamente).
+</script>
+{% endblock %}

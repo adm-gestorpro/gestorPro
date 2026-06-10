@@ -1,0 +1,787 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load auth_extras %}
+
+{% block title %}Controle de Validade | GestorPro{% endblock %}
+
+{% block page_name %}Controle de validade{% endblock %}
+
+{% block content %}
+<div id="modal-add" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-lg animate-in fade-in zoom-in duration-200 my-auto">
+        <div class="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Adicionar novo lote</h3>
+            <button onclick="fecharModal('modal-add')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+        
+        <form method="POST" action="{% url 'cadastrar_validade' %}" onsubmit="showLoading()" class="p-5 space-y-4">
+            {% csrf_token %}
+            
+            <div class="relative">
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Produto (Nome, Cód. Interno ou EAN)
+                </label>
+
+                <div class="relative flex items-center">
+                    <input
+                        type="text"
+                        id="produto-search"
+                        autocomplete="off"
+                        placeholder="Digite ou use o leitor de código de barras..."
+                        class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 pr-12 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white"
+                    >
+                    <button type="button" onclick="iniciarScanner()" class="absolute right-3 text-slate-400 hover:text-blue-600 transition-colors" title="Ler Código de Barras">
+                        <i class="fa-solid fa-barcode text-xl"></i>
+                    </button>
+                </div>
+
+                <div id="scanner-container" class="hidden mt-2 border border-slate-300 rounded-lg overflow-hidden relative">
+                    <div id="reader" width="100%"></div>
+                    <button type="button" onclick="fecharScanner()" class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center z-10 hover:bg-red-700 shadow-lg">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <input type="hidden" name="produto" id="produto-id" required>
+
+                <div id="produto-results" class="hidden absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl max-h-64 overflow-y-auto"></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Loja</label>
+                    <select name="loja" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white">
+                        <option value="">Selecione a loja...</option>
+                        {% for l in lojas %}
+                            <option value="{{ l.cod_loja }}">Loja {{ l.cod_loja }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantidade atual</label>
+                    <input type="number" name="quantidade" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white" placeholder="0">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Lote do produto</label>
+                    <input type="text" style="text-transform: uppercase;" name="lote" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white" placeholder="Ex: LT123">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Data de validade</label>
+                    <input type="date" name="data_validade" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Troca do fornecedor?</label>
+                    <select name="troca_fornecedor" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white">
+                        <option value="SG">Não (Sem troca)</option>
+                        <option value="TF">Sim (Permitido)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Observações</label>
+                <textarea name="observacoes" rows="2" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white" placeholder="Detalhes adicionais sobre este lote..."></textarea>
+            </div>
+
+            <div class="pt-4 mt-2 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3">
+                <button type="button" onclick="fecharModal('modal-add')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">Salvar Lote</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="max-w-screen-2xl mx-auto space-y-6 p-4 lg:p-6">
+    
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Controle de validade</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Gerencie os prazos dos produtos por filial e lote.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="abrirModal('modal-add')" class="px-4 py-2 w-full md:w-auto justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center">
+                <i class="fa-solid fa-plus mr-2 mt-0.5"></i> Adicionar novo lote
+            </button>
+        </div>
+    </div>
+
+    <div id="estatisticas-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <a href="?status=vencido{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'vencido' %}border-rose-600 ring-2 ring-rose-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+            <div class="absolute top-0 left-0 w-1 h-full bg-rose-600"></div>
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Já Vencidos</p>
+                    <h3 class="text-3xl font-extrabold text-rose-700 dark:text-rose-400 mt-2">{{ contagem_vencidos }}</h3>
+                </div>
+                <div class="p-2 bg-rose-50 dark:bg-rose-500/10 rounded-lg text-rose-600 dark:text-rose-400">
+                    <i class="fa-solid fa-circle-exclamation text-lg animate-pulse"></i>
+                </div>
+            </div>
+            <div class="mt-4 text-xs text-rose-600 dark:text-rose-400 font-medium flex items-center justify-between">
+                <span>Retirar do estoque</span>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity">Filtrar →</span>
+            </div>
+        </a>
+
+        <a href="?status=critico{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'critico' %}border-red-500 ring-2 ring-red-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+            <div class="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Crítico (0-30 dias)</p>
+                    <h3 class="text-3xl font-bold text-slate-900 dark:text-white mt-2">{{ contagem_30 }}</h3>
+                </div>
+                <div class="p-2 bg-red-50 dark:bg-red-500/10 rounded-lg text-red-600 dark:text-red-400">
+                    <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                </div>
+            </div>
+            <div class="mt-4 text-xs text-red-600 font-medium flex items-center justify-between">
+                <span>Ações promocionais</span>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity">Filtrar →</span>
+            </div>
+        </a>
+
+        <a href="?status=atencao{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'atencao' %}border-orange-500 ring-2 ring-orange-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+            <div class="absolute top-0 left-0 w-1 h-full bg-orange-500"></div>
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Atenção (31-60 dias)</p>
+                    <h3 class="text-3xl font-bold text-slate-900 dark:text-white mt-2">{{ contagem_60 }}</h3>
+                </div>
+                <div class="p-2 bg-orange-50 dark:bg-orange-500/10 rounded-lg text-orange-600 dark:text-orange-400">
+                    <i class="fa-solid fa-clock text-lg"></i>
+                </div>
+            </div>
+            <div class="mt-4 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                <span>Planejar exposição</span>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity">Filtrar →</span>
+            </div>
+        </a>
+
+        <a href="?status=observacao{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'observacao' %}border-yellow-400 ring-2 ring-yellow-400/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+            <div class="absolute top-0 left-0 w-1 h-full bg-yellow-400"></div>
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Observação (61-90d)</p>
+                    <h3 class="text-3xl font-bold text-slate-900 dark:text-white mt-2">{{ contagem_90 }}</h3>
+                </div>
+                <div class="p-2 bg-yellow-50 dark:bg-yellow-400/10 rounded-lg text-yellow-600 dark:text-yellow-400">
+                    <i class="fa-solid fa-eye text-lg"></i>
+                </div>
+            </div>
+            <div class="mt-4 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                <span>Giro normal</span>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity">Filtrar →</span>
+            </div>
+        </a>
+
+        <a href="?status=seguro{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'seguro' %}border-emerald-500 ring-2 ring-emerald-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+            <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Seguro (> 90 dias)</p>
+                    <h3 class="text-3xl font-bold text-slate-900 dark:text-white mt-2">{{ contagem_seguro }}</h3>
+                </div>
+                <div class="p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg text-emerald-600 dark:text-emerald-400">
+                    <i class="fa-solid fa-shield text-lg"></i>
+                </div>
+            </div>
+            <div class="mt-4 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                <span>Lotes saudáveis</span>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity">Filtrar →</span>
+            </div>
+        </a>
+    </div>
+
+    {% if query or filtro_status %}
+        <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs text-slate-500">Filtros ativos:</span>
+            {% if query %}<span class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-2.5 py-1 rounded-md font-medium">Busca: "{{ query }}"</span>{% endif %}
+            {% if filtro_status %}<span class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-2.5 py-1 rounded-md font-medium">Status: {{ filtro_status|title }}</span>{% endif %}
+            <a href="?per_page={{ per_page }}" class="text-xs text-blue-600 hover:underline font-medium ml-2">Limpar todos</a>
+        </div>
+    {% endif %}
+
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
+        
+        <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/50">
+            <div class="relative w-full sm:w-96">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                </div>
+                <input type="text" id="search-input" value="{{ query }}" class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 shadow-sm" placeholder="Digite para filtrar instantaneamente...">
+            </div>
+            
+            <div class="flex items-center gap-2 text-xs text-slate-400 font-medium">
+                <span id="status-atualizacao">Filtro inteligente e Atualização Automática ativos</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            </div>
+        </div>
+
+        <div class="overflow-x-hidden md:overflow-x-auto flex-1 bg-slate-50/30 dark:bg-slate-900/30 md:bg-transparent">
+            <table class="w-full text-sm text-left text-slate-500 dark:text-slate-400 ">
+                <thead class="hidden md:table-header-group text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-800 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                    <tr>
+                        <th scope="col" class="px-6 py-4 font-semibold">Produto / Identificadores</th>
+                        <th scope="col" class="px-6 py-4 font-semibold text-center">Loja</th>
+                        <th scope="col" class="px-6 py-4 font-semibold text-center">Lote</th>
+                        <th scope="col" class="px-6 py-4 font-semibold text-center">Vencimento</th>
+                        <th scope="col" class="px-6 py-4 font-semibold text-center">Status</th>
+                        <th scope="col" class="px-6 py-4 font-semibold text-center">Ações</th>
+                    </tr>
+                </thead>
+                
+                <tbody id="tabela-validades" class="block md:table-row-group p-4 md:p-0 space-y-4 md:space-y-0 md:divide-y divide-slate-200 dark:divide-slate-700">
+                    {% for item in page_obj %}
+                    <tr class="product-row flex flex-col md:table-row border border-slate-200 dark:border-slate-700 md:border-none rounded-xl md:rounded-none overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50 md:divide-y-0 hover:bg-white md:hover:bg-slate-50/50 dark:hover:bg-slate-750/30 transition-colors bg-white dark:bg-slate-800 shadow-sm md:shadow-none"
+                        data-search="{{ item.nome|escape }} {{ item.codigo_interno|escape }} {{ item.codigo_barras|escape }} {{ item.lote|escape }} loja {{ item.loja|escape }} {% if item.promocao_ativa %}promocao ativa{% endif %}">
+                        
+                        <td class="block md:table-cell px-4 md:px-6 py-3 md:py-4 bg-slate-50/50 dark:bg-slate-800/80 md:bg-transparent">
+                            <div class="flex flex-col">
+                                <span class="font-semibold text-slate-900 dark:text-white text-base md:text-sm">{{ item.nome }}</span>
+                                <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 md:text-slate-400 mt-1 md:mt-0.5">
+                                    <span>Int: <span class="font-mono text-slate-700 dark:text-slate-300">{{ item.codigo_interno }}</span></span>
+                                    <span>EAN: <span class="font-mono text-slate-700 dark:text-slate-300">{{ item.codigo_barras }}</span></span>
+                                    <span>Lançado por: <span class="font-mono text-slate-700 dark:text-slate-300">{{ item.lancado_por }} em {{ item.data_cadastro|date:"d/m/Y \à\s H:i" }}</span></span>
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <td class="text-center flex justify-between items-center md:table-cell px-4 md:px-6 py-3 md:py-4 md:whitespace-nowrap">
+                            <span class="md:hidden text-xs font-medium text-slate-500 uppercase tracking-wide">Loja</span>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600">
+                                <i class="fa-solid fa-store mr-1.5 text-slate-400"></i> Loja {{ item.loja }}
+                            </span>
+                        </td>
+                        
+                        <td class="text-center flex justify-between items-center md:table-cell px-4 md:px-6 py-3 md:py-4 font-mono text-xs text-slate-700 dark:text-slate-300">
+                            <span class="md:hidden font-sans text-xs font-medium text-slate-500 uppercase tracking-wide">Lote</span>
+                            <span>{{ item.lote }}</span>
+                        </td>
+                        
+                        <td class="text-center flex justify-between items-center md:table-cell px-4 md:px-6 py-3 md:py-4 md:whitespace-nowrap">
+                            <span class="md:hidden text-xs font-medium text-slate-500 uppercase tracking-wide">Vencimento</span>
+                            <div class="flex flex-col">
+                                <span class="font-medium text-slate-900 dark:text-white">{{ item.data_vencimento|date:"d/m/Y" }}</span>
+                                <span class="text-xs font-medium {% if item.dias_restantes <= 30 %}text-red-500{% elif item.dias_restantes <= 60 %}text-orange-500{% else %}text-slate-400{% endif %}">
+                                    {% if item.dias_restantes < 0 %}
+                                        Vencido há <br>{{ item.dias_restantes|stringformat:"d"|slice:"1:" }} dias
+                                    {% elif item.dias_restantes == 0 %}
+                                        Vence hoje!
+                                    {% else %}
+                                        Vence em <br>{{ item.dias_restantes }} dias
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </td>
+                        
+                        <td class="text-center flex justify-between items-center md:table-cell px-4 md:px-6 py-3 md:py-4 md:whitespace-nowrap">
+                            <span class="md:hidden text-xs font-medium text-slate-500 uppercase tracking-wide">Status</span>
+                            <div class="flex flex-col md:flex-row gap-2 md:items-center">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border {{ item.badge_class }}">
+                                    <span class="w-1.5 h-1.5 rounded-full mr-1.5 {{ item.badge_dot }}"></span> {{ item.status_texto }}
+                                </span>
+
+                                {% if item.promocao_ativa %}
+                                <span class="inline-flex flex-col items-center justify-center text-center px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/30">
+                                    <i class="fa-solid fa-tags mb-1 text-emerald-600 dark:text-emerald-400"></i> Em promoção
+                                </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        
+                        <td class="px-4 md:px-6 py-4 md:py-4 md:whitespace-nowrap bg-slate-50/50 dark:bg-slate-800/80 md:bg-transparent">
+                            <div class="flex md:justify-end gap-2 w-full">
+                                
+                                {% if request.user|has_any_group:"Administrador,Gerente de Loja,Gerente Distrital" %}
+                                <button title="Editar Lote" 
+                                    data-id="{{ item.id }}"
+                                    data-nome="{{ item.codigo_interno }} - {{ item.nome }}"
+                                    data-lote="{{ item.lote }}"
+                                    data-validade="{{ item.dt_validade|date:'Y-m-d' }}"
+                                    data-quantidade="{{ item.qt_lote|default:0 }}"
+                                    data-troca="{{ item.tipo_lote|default:'' }}"
+                                    data-obs="{{ item.obs_geral|default:''|escapejs }}"
+                                    data-promocao="{{ item.promocao_ativa|yesno:'True,False' }}"
+                                    onclick="abrirModalEditar(this)"
+                                    class="flex-1 md:flex-none flex justify-center items-center text-slate-500 hover:text-blue-600 transition-colors py-2.5 md:py-2 px-4 md:px-3 border border-slate-200 dark:border-slate-600 md:border-transparent rounded-lg md:rounded-md bg-white dark:bg-slate-900 md:bg-transparent shadow-sm md:shadow-none">
+                                    <i class="fa-solid fa-pen-to-square text-base"></i> <span class="md:hidden text-xs ml-2 font-semibold">Editar</span>
+                                </button>
+                                
+                                <button title="Inativar Lote"
+                                onclick="abrirModal('modal-delete', '{{ item.id }}', 'inativar_validade/')"
+                                class="flex-1 md:flex-none flex justify-center items-center text-slate-500 hover:text-red-600 transition-colors py-2.5 md:py-2 px-4 md:px-3 border border-slate-200 dark:border-slate-600 md:border-transparent rounded-lg md:rounded-md bg-white dark:bg-slate-900 md:bg-transparent shadow-sm md:shadow-none">
+                                    <i class="fa-solid fa-trash-can text-base"></i> <span class="md:hidden text-xs ml-2 font-semibold">Excluir</span>
+                                </button>
+                                {% else %}
+                                <p>Sem ações permitidas</p>
+                                {% endif %}
+
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr class="block md:table-row">
+                        <td colspan="6" class="block md:table-cell px-6 py-12 text-center">
+                            <div class="text-slate-400 mb-2"><i class="fa-solid fa-box-open text-3xl"></i></div>
+                            <p class="text-slate-500 dark:text-slate-400 font-medium">Nenhum registro encontrado para os critérios selecionados.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.paginator.count > 0 %}
+        <div class="p-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto text-center sm:text-left justify-center sm:justify-start">
+                <span class="text-sm text-slate-500 dark:text-slate-400">
+                    Mostrando <span class="font-semibold text-slate-900 dark:text-white">{{ page_obj.start_index }}</span> a <span class="font-semibold text-slate-900 dark:text-white">{{ page_obj.end_index }}</span> de <span class="font-semibold text-slate-900 dark:text-white">{{ page_obj.paginator.count }}</span> registros
+                </span>
+                
+                <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <label for="per-page-select" class="whitespace-nowrap">Ver:</label>
+                    <select id="per-page-select" onchange="alterarItensPorPagina(this.value)" class="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg p-1.5 text-xs focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                        <option value="10" {% if per_page == 10 %}selected{% endif %}>10 por pág.</option>
+                        <option value="20" {% if per_page == 20 %}selected{% endif %}>20 por pág.</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50 por pág.</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="inline-flex rounded-md shadow-sm">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if filtro_status %}&status={{ filtro_status }}{% endif %}{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-l-lg hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors">
+                        Anterior
+                    </a>
+                {% else %}
+                    <button class="px-4 py-2 text-sm font-medium text-slate-400 bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-600 rounded-l-lg opacity-50 cursor-not-allowed" disabled>
+                        Anterior
+                    </button>
+                {% endif %}
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if filtro_status %}&status={{ filtro_status }}{% endif %}{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-l-0 border-slate-300 rounded-r-lg hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors">
+                        Próxima
+                    </a>
+                {% else %}
+                    <button class="px-4 py-2 text-sm font-medium text-slate-400 bg-slate-100 dark:bg-slate-800/50 border border-l-0 border-slate-300 dark:border-slate-600 rounded-r-lg opacity-50 cursor-not-allowed" disabled>
+                        Próxima
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+    <div id="modal-edit" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-lg animate-in fade-in zoom-in duration-200 my-auto">
+            <div class="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white">Editar lote</h3>
+                <button type="button" onclick="fecharModal('modal-edit')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="form-edit" onsubmit="enviarEdicao(event)" class="p-5 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" id="edit-id" name="id">
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Produto</label>
+                    <input type="text" disabled id="edit-nome" style="text-transform: uppercase;" name="nome" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Lote do produto</label>
+                        <input type="text" id="edit-lote" style="text-transform: uppercase;" name="lote" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Data de validade</label>
+                        <input type="date" id="edit-validade" name="data_validade" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantidade atual</label>
+                        <input type="number" id="edit-quantidade" name="quantidade" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Troca do fornecedor?</label>
+                        <select id="edit-troca" name="troca_fornecedor" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white">
+                            <option value="SG">Não (Sem troca)</option>
+                            <option value="TF">Sim (Permitido)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+                    <input type="checkbox" id="edit-promocao-ativa" name="promocao_ativa" value="True"
+                        class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                    <label for="edit-promocao-ativa" class="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Lote com promoção ativa
+                    </label>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Observações</label>
+                    <textarea id="edit-obs" name="observacoes" rows="2" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white" placeholder="Detalhes adicionais sobre este lote..."></textarea>
+                </div>
+
+                <div class="pt-4 mt-2 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3">
+                    <button type="button" onclick="fecharModal('modal-edit')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">Editar Lote</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-delete"
+        class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md">
+
+            <div class="p-5 border-b border-slate-200 dark:border-slate-700">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+                    Confirmar inativação do lote
+                </h3>
+            </div>
+
+            <div class="p-5">
+                <p class="text-sm text-slate-600 dark:text-slate-300">
+                    Deseja realmente inativar este lote?
+                </p>
+            </div>
+
+            <div class="flex justify-end gap-3 p-4 border-t border-slate-200 dark:border-slate-700">
+
+                <button
+                    type="button"
+                    onclick="fecharModal('modal-delete')"
+                    class="px-4 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+
+                    Cancelar
+                </button>
+
+                <form id="form-delete" method="DELETE">
+                    {% csrf_token %}
+
+                    <button
+                        type="submit"
+                        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors">
+
+                        Inativar lote
+                    </button>
+                </form>
+
+            </div>
+        </div>
+    </div>
+    <div id="loading-overlay" class="fixed inset-0 z-[9999] hidden flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm transition-opacity">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mb-4"></div>
+        <h2 class="text-xl font-bold text-white">Processando...</h2>
+        <p class="text-slate-300 mt-2 text-sm">Por favor, aguarde enquanto salvamos as informações.</p>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+<script>
+    function showLoading() {
+        const overlay = document.getElementById('loading-overlay');
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+    }
+
+    function hideLoading() {
+        const overlay = document.getElementById('loading-overlay');
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+    }
+
+    const produtos = [
+        {% for p in produtos_modal %}
+        {
+            id: '{{ p.cod_produto }}',                             
+            nome: `{{ p.desc_produto|escapejs }}`,                 
+            codigo_interno: `{{ p.cod_produto|escapejs }}`,        
+            codigo_barras: `{{ p.cod_gtin_principal|default:''|escapejs }}` 
+        },
+        {% endfor %}
+    ];
+
+    let html5QrCode = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchInputTabela = document.getElementById('search-input');
+        const productRows = document.querySelectorAll('.product-row');
+
+        if (searchInputTabela) {
+            searchInputTabela.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase().trim();
+                const rows = document.querySelectorAll('.product-row'); // Pega novamente por causa do Ajax
+                rows.forEach(row => {
+                    const rawData = row.getAttribute('data-search');
+                    const searchData = (rawData ? rawData : '').toLowerCase();
+                    if (searchData.includes(searchTerm)) {
+                        row.style.display = ''; 
+                    } else {
+                        row.style.display = 'none'; 
+                    }
+                });
+            });
+
+            searchInputTabela.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set('q', searchInputTabela.value.trim());
+                    urlParams.set('page', '1');
+                    window.location.search = urlParams.toString();
+                }
+            });
+        }
+
+        const produtoSearch = document.getElementById('produto-search');
+        const produtoResults = document.getElementById('produto-results');
+        const produtoId = document.getElementById('produto-id');
+
+        if (produtoSearch) {
+            produtoSearch.addEventListener('input', function () {
+                const termo = this.value.toLowerCase().trim();
+                produtoResults.innerHTML = '';
+
+                if (termo.length === 0) {
+                    produtoResults.classList.add('hidden');
+                    produtoId.value = '';
+                    return;
+                }
+
+                const filtrados = produtos.filter(produto => {
+                    return (
+                        produto.nome.toLowerCase().includes(termo) ||
+                        produto.codigo_interno.toLowerCase().includes(termo) ||
+                        produto.codigo_barras.toLowerCase().includes(termo)
+                    );
+                }).slice(0, 15); 
+
+                if (filtrados.length === 0) {
+                    produtoResults.innerHTML = `<div class="p-3 text-sm text-slate-500 dark:text-slate-400">Nenhum produto encontrado.</div>`;
+                } else {
+                    filtrados.forEach(produto => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = "w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 border-b border-slate-100 dark:border-slate-700 transition-colors";
+                        btn.innerHTML = `
+                            <div class="font-medium text-slate-900 dark:text-white">${produto.nome}</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Int: ${produto.codigo_interno || '-'} | EAN: ${produto.codigo_barras || '-'}
+                            </div>
+                        `;
+                        
+                        btn.onclick = () => {
+                            produtoSearch.value = produto.nome; 
+                            produtoId.value = produto.id;      
+                            produtoResults.classList.add('hidden');
+                        };
+                        produtoResults.appendChild(btn);
+                    });
+                }
+                produtoResults.classList.remove('hidden');
+            });
+        }
+    });
+
+    function alterarItensPorPagina(quantidade) {
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.set('per_page', quantidade);
+        urlParams.set('page', '1');
+        window.location.search = urlParams.toString();
+    }
+
+    function iniciarScanner() {
+        const scannerContainer = document.getElementById('scanner-container');
+        scannerContainer.classList.remove('hidden');
+
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode("reader");
+        }
+
+        html5QrCode.start(
+            { facingMode: "environment" },
+            {
+                fps: 10,
+                qrbox: { width: 250, height: 150 }
+            },
+            (decodedText, decodedResult) => {
+                const inputSearch = document.getElementById('produto-search');
+                inputSearch.value = decodedText;
+                inputSearch.dispatchEvent(new Event('input'));
+                fecharScanner();
+            },
+            (errorMessage) => {}
+        ).catch((err) => {
+            console.error("Erro na Câmera: ", err);
+            alert("Não foi possível iniciar a câmera. Certifique-se de dar permissão ao navegador ou que a URL utiliza ambiente seguro (HTTPS / Localhost).");
+            fecharScanner();
+        });
+    }
+
+    function fecharScanner() {
+        const scannerContainer = document.getElementById('scanner-container');
+        scannerContainer.classList.add('hidden');
+        
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().then(() => {
+                html5QrCode.clear();
+            }).catch((err) => {
+                console.error("Erro ao tentar parar a câmera: ", err);
+            });
+        }
+    }
+</script>
+
+<script>
+    function abrirModal(idModal, idItem = null, urlBase = null) {
+        try {
+            const modal = document.getElementById(idModal);
+            
+            if (!modal) {
+                console.error("Modal não encontrado: " + idModal);
+                return;
+            }
+
+            if (idModal === 'modal-delete' && idItem && urlBase) {
+                const form = document.getElementById('form-delete');
+                form.action = `${urlBase}${idItem}/`;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex'); 
+        } catch (e) {
+            console.error("Erro ao abrir modal:", e);
+        }
+    }
+
+    function fecharModal(idModal) {
+        const modal = document.getElementById(idModal);
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        fecharScanner();
+    }
+
+    // NOVA FUNÇÃO: POPULAR MODAL DE EDIÇÃO E ABRIR
+    function abrirModalEditar(btnElement) {
+        const id = btnElement.getAttribute('data-id');
+        const nome = btnElement.getAttribute('data-nome');
+        const lote = btnElement.getAttribute('data-lote');
+        const validade = btnElement.getAttribute('data-validade');
+        const quantidade = btnElement.getAttribute('data-quantidade') || 0;
+        const troca = btnElement.getAttribute('data-troca') || 'SG';
+        const obs = btnElement.getAttribute('data-obs') || '';
+        const promocao = btnElement.getAttribute('data-promocao');
+
+        document.getElementById('edit-id').value = id;
+        document.getElementById('edit-nome').value = nome;
+        document.getElementById('edit-lote').value = lote;
+        document.getElementById('edit-validade').value = validade;
+        document.getElementById('edit-quantidade').value = parseInt(quantidade,10);
+        document.getElementById('edit-obs').value = obs;
+        document.getElementById('edit-promocao-ativa').checked = (promocao === 'True');
+
+        const selectTroca = document.getElementById('edit-troca');
+        if(troca.toUpperCase() === 'TF' || troca.toLowerCase() === 'sim') {
+            selectTroca.value = 'TF';
+        } else {
+            selectTroca.value = 'SG';
+        }
+
+        abrirModal('modal-edit');
+    }
+
+    // NOVA FUNÇÃO: INTERCEPTAR O ENVIO DO FORMULÁRIO E MANDAR UM REQUEST "PUT"
+    async function enviarEdicao(event) {
+        event.preventDefault(); 
+        
+        // MOSTRA A TELA DE CARREGAMENTO
+        showLoading();
+        
+        const form = event.target;
+        const id = document.getElementById('edit-id').value;
+        const url = `editar_validade/${id}/`; // Adapte conforme o seu urls.py
+        
+        const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+        const formData = new URLSearchParams(new FormData(form));
+
+        try {
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: formData.toString()
+            });
+
+            if(response.ok) {
+                fecharModal('modal-edit');
+                atualizarTabelaSilenciosamente(); 
+            } else {
+                alert('Erro ao processar as alterações. Verifique os dados e tente novamente.');
+            }
+        } catch (error) {
+            console.error('Erro de requisição:', error);
+            alert('Não foi possível se conectar com o servidor.');
+        } finally {
+            // ESCONDE A TELA DE CARREGAMENTO AO TERMINAR (DANDO CERTO OU ERRADO)
+            hideLoading();
+        }
+    }
+
+    // NOVA FUNÇÃO: ATUALIZAR TABELA EM BACKGROUND SEM RECARREGAR A PÁGINA
+    function atualizarTabelaSilenciosamente() {
+        // Busca a mesma URL atual preservando os filtros ativos
+        fetch(window.location.href)
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // 1. Atualizar o corpo da Tabela
+                const newTbody = doc.getElementById('tabela-validades');
+                const oldTbody = document.getElementById('tabela-validades');
+                if (newTbody && oldTbody) {
+                    oldTbody.innerHTML = newTbody.innerHTML;
+                }
+                
+                // 2. Atualizar os Cards de Estatísticas
+                const newCards = doc.getElementById('estatisticas-cards');
+                const oldCards = document.getElementById('estatisticas-cards');
+                if (newCards && oldCards) {
+                    oldCards.innerHTML = newCards.innerHTML;
+                }
+
+                // 3. Re-aplicar o filtro de busca local se o usuário já estiver digitando algo
+                const searchInputTabela = document.getElementById('search-input');
+                if (searchInputTabela && searchInputTabela.value.trim() !== '') {
+                    searchInputTabela.dispatchEvent(new Event('input'));
+                }
+            })
+            .catch(error => console.error('Erro no auto-refresh:', error));
+    }
+
+    // ATIVA A ATUALIZAÇÃO AUTOMÁTICA A CADA 60 SEGUNDOS (60.000 ms)
+    setInterval(atualizarTabelaSilenciosamente, 10000);
+</script>
+{% endblock %}

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>GestorPro | Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                fontFamily: { sans: ['Inter', 'sans-serif'] },
+                extend: { colors: { primary: {"500":"#3b82f6","600":"#2563eb"} } }
+            }
+        }
+    </script>
+    <script>
+    // Se a página for carregada via cache (Service Worker), força o reload
+        if (window.performance && window.performance.navigation.type === window.performance.navigation.TYPE_BACK_FORWARD) {
+            window.location.reload(true);
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-slate-900 text-slate-100 h-screen overflow-hidden flex font-sans antialiased">
+
+    <div class="hidden lg:flex lg:w-1/2 relative flex-col justify-center p-20 bg-slate-900">
+        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=2070')] bg-cover bg-center opacity-40 mix-blend-overlay"></div>
+        <div class="relative z-10">
+            <h1 class="text-5xl font-bold text-white mb-6 leading-tight">Potencialize sua<br>gestão comercial.</h1>
+            <p class="text-xl text-slate-300 max-w-lg">O GestorPro oferece as ferramentas necessárias para escalar seu negócio com dados em tempo real e interface intuitiva.</p>
+        </div>
+    </div>
+
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12">
+        <div class="w-full max-w-md">
+            <a href="#" class="text-3xl font-extrabold text-white mb-10 block tracking-tight">Gestor<span class="text-primary-500">Pro</span></a>
+            
+            <h5 class="text-2xl font-bold mb-2">Acessar conta</h5>
+            <p class="text-slate-400 mb-8">Bem-vindo de volta! Por favor, insira seus dados.</p>
+
+            <form method="POST" action="{% url 'login_view' %}" class="space-y-5">
+                {% csrf_token %}
+                <div>
+                    <label for="username" class="block text-sm font-medium text-slate-300 mb-2">Usuário ou E-mail</label>
+                    <input type="text" name="username" id="username" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-3 transition-colors" placeholder="ex: admin_gestor" required>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="password" class="block text-sm font-medium text-slate-300">Senha</label>
+                    </div>
+                    <input type="password" name="password" id="password" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-3 transition-colors" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="w-full text-white bg-primary-500 hover:bg-primary-600 focus:ring-4 focus:ring-primary-500/50 font-semibold rounded-lg text-md px-5 py-3 text-center transition-all mt-4">Entrar no GestorPro</button>
+                
+                <p class="text-sm text-slate-400 mt-4 text-center">Esqueceu a senha? <a href="#" class="text-primary-500 hover:underline">Clique aqui</a></p>
+            </form>
+        </div>
+    </div>
+
+    <div id="loading-overlay" class="fixed inset-0 z-50 hidden flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 dark:border-blue-400 mb-4"></div>
+        <p class="text-white font-medium text-lg">Autenticando, aguarde ...</p>
+    </div>
+
+    <script>
+        const loginForm = document.querySelector('form');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const submitBtn = loginForm.querySelector('button[type="submit"]');
+
+        loginForm.addEventListener('submit', function() {
+            // Exibe o loader
+            loadingOverlay.classList.remove('hidden');
+            loadingOverlay.classList.add('flex');
+            
+            // Opcional: Desativa o botão para evitar cliques duplos
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
+        });
+    </script>
+</body>
+</html>

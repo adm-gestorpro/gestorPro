@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="w-full px-4 md:px-8 py-8">
+
+    <div class="text-center mb-8">
+        <h4 class="text-xl font-semibold text-blue-600">Atualizações manuais</h4>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+        <div class="col-span-1">
+            <h5 class="text-lg font-medium mb-4">Cadastros comerciais</h5>
+
+            <form method="POST" action="{% url 'atualizar_fornecedores' %}" class="flex justify-between items-center gap-2 flex-wrap mb-4">
+                {% csrf_token %}
+                <span class="text-sm">Atualizar cadastros de fornecedores</span>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors btn-processar" onclick="openModal()">
+                    Atualizar Fornecedores
+                </button>
+            </form>
+
+            
+            <form method="POST" action="{% url 'atualizar_produtos' %}" class="flex justify-between items-center gap-2 flex-wrap mb-4">
+                {% csrf_token %}
+                <span class="text-sm">Atualizar cadastros de produtos</span>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors btn-processar" onclick="openModal()">
+                    Atualizar Produtos
+                </button>
+            </form>
+
+            <form method="POST" action="{% url 'atualizar_vendedores' %}" class="flex justify-between items-center gap-2 flex-wrap mb-4">
+                {% csrf_token %}
+                <span class="text-sm">Atualizar cadastros de vendedores</span>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors btn-processar" onclick="openModal()">
+                    Atualizar vendedores
+                </button>
+            </form>
+        </div>
+
+        <div class="col-span-1">
+            <h5 class="text-lg font-medium mb-4">Preços</h5>
+
+            <form method="POST" action="" class="flex justify-between items-center gap-2 flex-wrap mb-4">
+                {% csrf_token %}
+                <span class="text-sm">Atualizar carga de preços</span>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors btn-processar" onclick="openModal()">
+                    Atualizar Carga
+                </button>
+            </form>
+
+            <form method="POST" action="" class="flex justify-between items-center gap-2 flex-wrap mb-4">
+                {% csrf_token %}
+                <span class="text-sm">Atualizar preços de venda</span>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors btn-processar" onclick="openModal()">
+                    Atualizar Preços
+                </button>
+            </form>
+
+            <form method="POST" action="" class="flex justify-between items-center gap-2 flex-wrap">
+                {% csrf_token %}
+                <span class="text-sm">Atualizar promoções dos produtos</span>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors btn-processar" onclick="openModal()">
+                    Atualizar Promoções
+                </button>
+            </form>
+        </div>
+
+        <div class="col-span-1">
+            <h5 class="text-lg font-medium mb-4">Clientes</h5>
+            <form method="POST" action="" class="flex justify-between items-center gap-2 flex-wrap">
+                {% csrf_token %}
+                <span class="text-sm">Atualizar cadastros dos clientes</span>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors btn-processar" onclick="openModal()">
+                    Atualizar Clientes
+                </button>
+            </form>
+        </div>
+
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10">
+
+        <div class="col-span-1">
+            <h5 class="text-lg font-medium mb-4">Redes e lojas</h5>
+            <form method="POST" action="{% url 'atualizar_redes' %}" class="flex justify-between items-center gap-2 flex-wrap mb-4">
+                {% csrf_token %}
+                <span class="text-sm">Atualizar cadastros das redes de lojas</span>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors btn-processar" onclick="openModal()">
+                    Atualizar Redes
+                </button>
+            </form>
+
+            <form method="POST" action="{% url 'atualizar_lojas' %}" class="flex justify-between items-center gap-2 flex-wrap mb-4">
+                {% csrf_token %}
+                <span class="text-sm">Atualizar cadastros das lojas</span>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors btn-processar" onclick="openModal()">
+                    Atualizar Lojas
+                </button>
+            </form>
+        </div>
+
+        <div class="col-span-1">
+            <h5 class="text-lg font-medium mb-4">Compras e faturamento</h5>
+            <form method="POST" action="" class="flex justify-between items-center gap-2 flex-wrap mb-4">
+                {% csrf_token %}
+                <span class="text-sm">Atualizar compras das lojas</span>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors btn-processar" onclick="openModal()">
+                    Atualizar Compras
+                </button>
+            </form>
+
+            <form method="POST" action="{% url 'atualizar_pedido_balcao' %}" class="flex justify-between items-center gap-2 flex-wrap mb-4">
+                {% csrf_token %}
+                <span class="text-sm">Atualizar pedido balcão das lojas</span>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors btn-processar" onclick="openModal()">
+                    Atualizar Pedido Balcão
+                </button>
+            </form>
+
+            <form method="POST" action="{% url 'atualizar_venda_online' %}" class="flex justify-between items-center gap-2 flex-wrap mb-4">
+                {% csrf_token %}
+                <span class="text-sm">Atualizar venda online das lojas</span>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors btn-processar" onclick="openModal()">
+                    Atualizar Venda Online
+                </button>
+            </form>
+        </div>
+
+    </div>
+
+</div>
+
+<div id="modalProcessando" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-sm mx-4 p-6 text-center transition-colors">
+        
+        <h5 class="text-lg font-bold mb-4 text-slate-900 dark:text-slate-100">
+            Processamento em andamento
+        </h5>
+        
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 dark:border-blue-400 mb-4"></div>
+            
+            <p class="text-sm mb-4 text-slate-600 dark:text-slate-300">
+                Aguarde enquanto o processo é finalizado.<br>
+                <strong class="font-bold text-slate-900 dark:text-white">Não feche esta página.</strong>
+            </p>
+            
+            <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-6 overflow-hidden">
+                <div id="progressBar" class="bg-blue-600 dark:bg-blue-500 h-full text-xs flex items-center justify-center text-white font-bold" style="width: 50%">
+                    50%
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openModal() {
+        document.getElementById('modalProcessando').classList.remove('hidden');
+    }
+</script>
+
+{% endblock %}

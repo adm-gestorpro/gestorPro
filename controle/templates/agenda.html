@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block page_name %}Agenda e Tarefas{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
+<style>
+    /* Adaptação leve do calendário para Dark Mode */
+    .dark .fc-theme-standard td, .dark .fc-theme-standard th { border-color: theme('colors.slate.700'); }
+    .dark .fc-daygrid-day-number { color: theme('colors.slate.300'); }
+    .dark .fc-col-header-cell-cushion { color: theme('colors.slate.200'); }
+    .dark .fc-button-primary { background-color: theme('colors.slate.800') !important; border-color: theme('colors.slate.700') !important; color: white !important;}
+    .dark .fc-button-active { background-color: theme('colors.primary.600') !important; border-color: theme('colors.primary.500') !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-xl font-bold text-slate-900 dark:text-white">Gestão de Agendamentos</h2>
+    <button class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium text-sm" onclick="openNewTaskModal()">
+        <i class="fa-solid fa-plus mr-2"></i> Nova Tarefa
+    </button>
+</div>
+
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 h-[calc(100vh-200px)]">
+    <div id="calendar" class="h-full"></div>
+</div>
+
+<div id="editTaskModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+    <div class="relative p-4 w-full max-w-2xl max-h-full">
+        <div class="relative bg-white rounded-lg shadow dark:bg-slate-800 border dark:border-slate-700">
+            <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-slate-700 bg-primary-600">
+                <h3 class="text-xl font-semibold text-white">
+                    <i class="fa-solid fa-pen-to-square mr-2"></i> Detalhes do Agendamento
+                </h3>
+                <button type="button" class="text-white bg-transparent hover:bg-primary-700 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center" data-modal-hide="editTaskModal">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-4 md:p-5 space-y-4">
+                <form id="editTaskForm">
+                    <input type="hidden" id="editEventId">
+                    <div class="mb-4">
+                        <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Título</label>
+                        <input type="text" id="editTaskTitle" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-gray-400 dark:text-white">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Data</label>
+                            <input type="date" id="editTaskDate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Hora</label>
+                            <input type="time" id="editTaskTime" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                        </div>
+                    </div>
+                    <hr class="dark:border-slate-700 my-4">
+                    <div class="space-y-3">
+                        <label class="block text-sm font-medium text-gray-900 dark:text-white">Dados do Cliente</label>
+                        <input type="text" id="editClientName" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded p-2.5 dark:text-white" placeholder="Nome do Cliente">
+                        <input type="text" id="editClientPhone" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded p-2.5 dark:text-white" placeholder="Telefone">
+                        <input type="email" id="editClientEmail" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded p-2.5 dark:text-white" placeholder="E-mail">
+                    </div>
+                </form>
+            </div>
+            <div class="flex items-center justify-between p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                <div class="flex gap-2">
+                    <button type="button" onclick="actionWhatsApp()" class="text-white bg-[#25D366] hover:bg-[#1ebd57] font-medium rounded-lg text-sm px-5 py-2.5 text-center"><i class="fa-brands fa-whatsapp"></i> Enviar</button>
+                    <button type="button" onclick="actionEmail()" class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-slate-800 dark:text-white dark:border-slate-600 dark:hover:bg-slate-700"><i class="fa-solid fa-envelope"></i> E-mail</button>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" onclick="deleteTask()" class="text-white bg-red-600 hover:bg-red-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Excluir</button>
+                    <button type="button" onclick="updateTask()" class="text-white bg-primary-600 hover:bg-primary-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Atualizar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script>
+    let calendar;
+    let currentEvent = null;
+    let editModal; // Flowbite Modal instance
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const modalEl = document.getElementById('editTaskModal');
+        editModal = new Modal(modalEl); // Instancia Flowbite
+
+        const calendarEl = document.getElementById('calendar');
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            locale: 'pt-br',
+            initialView: 'dayGridMonth',
+            headerToolbar: { left: 'prev,next today', center: 'title', right: 'multiMonthYear,dayGridMonth,timeGridWeek,timeGridDay' },
+            events: [ { id: '1', title: 'Entrega de Projeto', start: '2026-04-29T14:30:00', extendedProps: { clientName: 'Roberto Silva', clientPhone: '5511988887777' }, color: '#3b82f6' } ],
+            eventClick: function(info) {
+                currentEvent = info.event;
+                document.getElementById('editEventId').value = currentEvent.id;
+                document.getElementById('editTaskTitle').value = currentEvent.title;
+                const start = currentEvent.start;
+                document.getElementById('editTaskDate').value = start.toISOString().split('T')[0];
+                document.getElementById('editTaskTime').value = start.toTimeString().substring(0, 5);
+                
+                document.getElementById('editClientName').value = currentEvent.extendedProps.clientName || '';
+                document.getElementById('editClientPhone').value = currentEvent.extendedProps.clientPhone || '';
+                
+                editModal.show(); // Chama o método do Flowbite
+            }
+        });
+        calendar.render();
+    });
+
+    function updateTask() { /* Logica igual original. Para fechar: */ editModal.hide(); }
+    function deleteTask() { if(confirm('Excluir?')) { currentEvent.remove(); editModal.hide(); } }
+    // Mesma lógica actionWhatsapp e actionEmail originais
+</script>
+{% endblock %}

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desconectado | GestorPro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body class="bg-slate-900 text-slate-100 h-screen flex items-center justify-center">
+
+    <div class="text-center bg-slate-800 p-10 rounded-xl shadow-2xl border border-slate-700 max-w-sm w-full">
+        <i class="fa-solid fa-check-circle text-4xl text-green-500 mb-4"></i>
+        
+        <h2 class="text-2xl font-bold text-white mb-2">Desconectado</h2>
+        <p class="text-slate-400 mb-6">
+            Você saiu do sistema com segurança. 
+            <br><br>
+            <span class="text-slate-500 text-sm italic">Pode fechar esta aba ou janela agora.</span>
+        </p>
+        
+        <div class="space-y-3">
+            <a href="{% url 'login_view' %}" class="block w-full text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-5 py-3 transition-colors">
+                Entrar novamente
+            </a>
+            
+            <button onclick=fecharSistema() class="block w-full text-slate-400 bg-transparent border border-slate-700 hover:bg-slate-700 font-medium rounded-lg text-sm px-5 py-3 transition-colors">
+                Finalizar sessão
+            </button>
+        </div>
+    </div>
+
+</body>
+<script>
+    function fecharSistema() {
+        // Tenta fechar a janela usando o método padrão
+        window.close();
+
+        // Se o código chegou aqui, significa que o navegador bloqueou o window.close()
+        // (Isso acontece quase sempre em abas normais do navegador)
+        
+        // Vamos dar um feedback ao usuário que não foi possível fechar automaticamente
+        // e redirecionar para uma página em branco para limpar os dados da tela
+        setTimeout(() => {
+            alert("O navegador não permite que o sistema feche esta aba automaticamente por segurança. Você pode fechá-la manualmente no 'X' da aba.");
+            window.location.href = "about:blank";
+        }, 100);
+    }
+</script>
+</html>

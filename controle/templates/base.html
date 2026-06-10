@@ -1,0 +1,562 @@
+{% load static %}
+
+{% load auth_extras %}
+
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="GestorPro">
+
+    <link rel="apple-touch-icon" href="{% static 'images/icon-192.png' %}">
+    <title>{% block title %}GestorPro | Intelligence{% endblock %}</title>
+    
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="theme-color" content="#3b82f6">
+
+    <script>
+        if (localStorage.getItem('gestorpro_theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+        } else {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                fontFamily: { sans: ['Inter', 'sans-serif'] },
+                extend: { colors: { primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a"} } }
+            }
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        
+        .sidebar-transition { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .content-transition { transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        /* Larguras ultra-compactas (3.5rem = 56px colapsada) */
+        #sidebar.collapsed { width: 3.5rem; }
+        #sidebar.collapsed .nav-text, #sidebar.collapsed .nav-caret { display: none; }
+        #sidebar.collapsed .submenu { display: none !important; }
+        .main-content.expanded { margin-left: 3.5rem; }
+
+        #ios-pwa-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 5%;
+            right: 5%;
+            background: #ffffff;
+            color: #1e293b;
+            padding: 15px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            display: none;
+            border: 2px solid #3b82f6;
+            font-size: 0.85rem;
+        }
+        .dark #ios-pwa-prompt {
+            background: #1e293b;
+            color: #f8fafc;
+        }
+        #ios-pwa-prompt p { margin: 0 0 10px 0; font-weight: 600; line-height: 1.4; }
+        #ios-pwa-prompt .ios-steps { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #64748b; }
+        .dark #ios-pwa-prompt .ios-steps { color: #94a3b8; }
+        #ios-pwa-prompt .close-ios-prompt { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #64748b; cursor: pointer; font-size: 1.1rem; }
+        .dark #ios-pwa-prompt .close-ios-prompt { color: #94a3b8; }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased selection:bg-primary-500 selection:text-white">
+
+    <div id="tela-bloqueio" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/70 dark:bg-slate-900/80 backdrop-blur-sm transition-opacity duration-500 cursor-wait">
+    
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 dark:border-blue-400 mb-4"></div>
+        
+        <span class="text-sm font-semibold text-slate-700 dark:text-slate-300 animate-pulse">
+            Carregando informações...
+        </span>
+        
+    </div>
+
+    <aside id="sidebar" class="sidebar-transition fixed top-0 left-0 z-40 w-40 h-screen bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col overflow-y-auto overflow-x-hidden collapsed">
+        <div class="flex items-center justify-between h-[70px] px-3 shrink-0">
+            <span class="font-extrabold text-sm tracking-tight brand-logo nav-text">Gestor<span class="text-primary-500">Pro</span></span>
+            <button id="toggleSidebar" class="text-slate-500 hover:text-primary-500 focus:outline-none">
+                <i class="fa-solid fa-indent text-lg"></i>
+            </button>
+        </div>
+        
+        <div class="flex-1 px-2 py-4 space-y-1">
+            <a href="{% url 'dashboard' %}" onclick="showLoading();" class="flex items-center p-2 rounded-lg text-slate-700 hover:bg-primary-50 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-primary-400 group">
+                <i class="fa-solid fa-house-chimney-window w-6 text-center text-base"></i>
+                <span class="ml-2 nav-text font-medium text-xs">Visão Geral</span>
+            </a>
+
+            <button type="button" class="flex items-center w-full p-2 rounded-lg text-slate-700 hover:bg-primary-50 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-primary-400 group" aria-controls="menuProdutos" data-collapse-toggle="menuProdutos">
+                <i class="fa-solid fa-barcode w-6 text-center text-base"></i>
+                <span class="flex-1 ml-2 text-left whitespace-nowrap nav-text font-medium text-xs">Produtos</span>
+                <i class="fa-solid fa-chevron-down text-[10px] nav-caret transition-transform"></i>
+            </button>
+            
+            <ul id="menuProdutos" class="hidden py-1 space-y-1 submenu">
+                {% if request.user|has_any_group:"Administrador,Gerente de Loja,Gerente Distrital" %}
+                <li><a href="#" onclick="showLoading();" class="flex items-center p-2 pl-9 w-full text-xs rounded-lg text-slate-600 hover:text-primary-500 dark:text-slate-400 dark:hover:text-primary-400">Cadastrar</a></li>
+                {% endif %}
+                <li><a href="{% url 'listar_produtos' %}" onclick="showLoading();" class="flex items-center p-2 pl-9 w-full text-xs rounded-lg text-slate-600 hover:text-primary-500 dark:text-slate-400 dark:hover:text-primary-400">Listar</a></li>
+                <li><a href="{% url 'controle_validade' %}" onclick="showLoading();" class="flex items-center p-2 pl-9 w-full text-xs rounded-lg text-slate-600 hover:text-primary-500 dark:text-slate-400 dark:hover:text-primary-400">Controle de Validade</a></li>
+            </ul>
+            
+
+            <button type="button" class="flex items-center w-full p-2 rounded-lg text-slate-700 hover:bg-primary-50 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-primary-400 group" aria-controls="menuFornecedores" data-collapse-toggle="menuFornecedores">
+                <i class="fa-solid fa-address-card w-6 text-center text-base"></i>
+                <span class="flex-1 ml-2 text-left whitespace-nowrap nav-text font-medium text-xs">Fornecedores</span>
+                <i class="fa-solid fa-chevron-down text-[10px] nav-caret transition-transform"></i>
+            </button>
+            <ul id="menuFornecedores" class="hidden py-1 space-y-1 submenu">
+                <li><a href="{% url 'listar_fornecedores' %}" onclick="showLoading();" class="flex items-center p-2 pl-9 w-full text-xs rounded-lg text-slate-600 hover:text-primary-500 dark:text-slate-400 dark:hover:text-primary-400">Listar</a></li>
+            </ul>
+
+            {% if request.user|has_any_group:"Administrador,Diretoria,Comprador" %}
+            <button type="button" class="flex items-center w-full p-2 rounded-lg text-slate-700 hover:bg-primary-50 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-primary-400 group" aria-controls="menuCompras" data-collapse-toggle="menuCompras">
+                <i class="fa-solid fa-cart-arrow-down w-6 text-center text-base"></i>
+                <span class="flex-1 ml-2 text-left whitespace-nowrap nav-text font-medium text-xs">Compras</span>
+                <i class="fa-solid fa-chevron-down text-[10px] nav-caret transition-transform"></i>
+            </button>
+            <ul id="menuCompras" class="hidden py-1 space-y-1 submenu">
+                <li><a href="{% url 'pedido' %}" onclick="showLoading();" class="flex items-center p-2 pl-9 w-full text-xs rounded-lg text-slate-600 hover:text-primary-500 dark:text-slate-400 dark:hover:text-primary-400">Pedidos</a></li>
+            </ul>
+            {% endif %}
+
+             <button type="button" class="flex items-center w-full p-2 rounded-lg text-slate-700 hover:bg-primary-50 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-primary-400 group" aria-controls="menuVendas" data-collapse-toggle="menuVendas">
+                <i class="fa-solid fa-tag w-6 text-center text-base"></i>
+                <span class="flex-1 ml-2 text-left whitespace-nowrap nav-text font-medium text-xs">Vendas</span>
+                <i class="fa-solid fa-chevron-down text-[10px] nav-caret transition-transform"></i>
+            </button>
+            <ul id="menuVendas" class="hidden py-1 space-y-1 submenu">
+                <li><a href="{% url 'dashboard' %}" onclick="showLoading();" class="flex items-center p-2 pl-9 w-full text-xs rounded-lg text-slate-600 hover:text-primary-500 dark:text-slate-400 dark:hover:text-primary-400">Relatório de vendas</a></li>
+            </ul>
+
+            {% if request.user|has_any_group:"Administrador" %}
+            <button type="button" class="flex items-center w-full p-2 rounded-lg text-slate-700 hover:bg-primary-50 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-primary-400 group" aria-controls="menuGestao" data-collapse-toggle="menuGestao">
+                <i class="fa-solid fa-users-gear w-6 text-center text-base"></i>
+                <span class="flex-1 ml-2 text-left whitespace-nowrap nav-text font-medium text-xs">Gestão</span>
+                <i class="fa-solid fa-chevron-down text-[10px] nav-caret transition-transform"></i>
+            </button>
+            <ul id="menuGestao" class="hidden py-1 space-y-1 submenu">
+                <li><a href="{% url 'atualizacoes' %}" onclick="showLoading();" class="flex items-center p-2 pl-9 w-full text-xs rounded-lg text-slate-600 hover:text-primary-500 dark:text-slate-400 dark:hover:text-primary-400">Atualizações</a></li>
+            </ul>
+            {% endif %}
+        </div>
+
+        <button type="button" data-dropdown-toggle="user-dropdown" data-dropdown-placement="top-start" class="w-full p-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors focus:outline-none">
+            <div class="flex items-center">
+                <img src="https://ui-avatars.com/api/?name={% if request.user.is_authenticated %}{{ request.user.first_name|default:request.user.username }}{% else %}Admin{% endif %}&background=3b82f6&color=fff" class="rounded-full w-7 h-7">
+                <div class="ml-2 nav-text text-left">
+                    <p class="mb-0 text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        {% if request.user.is_authenticated %}
+                            {{ request.user.first_name|default:request.user.username }}
+                        {% else %}
+                            Admin
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <i class="fa-solid fa-ellipsis-vertical text-slate-400 nav-text text-xs mr-1"></i>
+        </button>
+    </aside>
+
+    <div id="user-dropdown" class="z-50 hidden bg-white divide-y divide-slate-100 rounded-lg shadow-xl w-200 dark:bg-slate-800 dark:divide-slate-700 border border-slate-100 dark:border-slate-700">
+        <div class="px-4 py-3 text-sm text-slate-900 dark:text-white">
+            <div class="font-bold truncate">
+                {% if request.user.is_authenticated %}
+                    {{ request.user.get_full_name|default:request.user.username }}
+                {% else %}
+                    Administrador
+                {% endif %}
+            </div>
+            <div class="font-small truncate text-xs text-slate-500 dark:text-slate-400">
+                {% if request.user.is_authenticated %}
+                    {{ request.user.email }}
+                {% else %}
+                    -
+                {% endif %}
+            </div>
+        </div>
+        <ul class="py-2 text-sm text-slate-700 dark:text-slate-200">
+            <li>
+                <a href="#" class="flex items-center px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 dark:hover:text-white transition-colors">
+                    <i class="fa-solid fa-user w-4 mr-2 text-slate-400"></i> Meu Perfil
+                </a>
+            </li>
+            <li>
+                <a href="#" class="flex items-center px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 dark:hover:text-white transition-colors">
+                    <i class="fa-solid fa-gear w-4 mr-2 text-slate-400"></i> Configurações
+                </a>
+            </li>
+        </ul>
+        <div class="py-2">
+            <a href="{% url 'logout_view' %}" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-slate-700 dark:text-red-500 dark:hover:text-red-400 transition-colors">
+                <i class="fa-solid fa-arrow-right-from-bracket w-4 mr-2"></i> Sair do sistema
+            </a>
+        </div>
+    </div>
+
+    <main class="main-content content-transition ml-40 min-h-screen flex flex-col expanded">
+        <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex justify-between items-center">
+            <nav class="flex text-sm text-slate-500 dark:text-slate-400 font-medium">
+                <ol class="inline-flex items-center space-x-1 md:space-x-2">
+                    <li class="inline-flex items-center">GestorPro</li>
+                    <li><span class="mx-2">/</span></li>
+                    <li class="text-slate-900 dark:text-white font-bold">{% block page_name %}Dashboard{% endblock %}</li>
+                </ol>
+            </nav>
+            <div class="zoom-controls flex gap-1">
+                <button onclick="alterarZoom(-0.05)" 
+                    class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    title="Diminuir zoom">
+                    <i class="fa-solid fa-magnifying-glass-minus"></i>
+                </button>
+                <button onclick="resetarZoom()" 
+                    class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    title="Resetar zoom">
+                    <i class="fa-solid fa-compress"></i>
+                </button>
+                <button onclick="alterarZoom(0.05)" 
+                    class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    title="Aumentar zoom">
+                    <i class="fa-solid fa-magnifying-glass-plus"></i>
+                </button>
+            </div>
+            <div class="flex items-center gap-1">
+                {% if request.user.is_authenticated %}
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+                    <svg class="h-4 w-4 text-slate-500 dark:text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <span class="text-xs font-medium text-slate-600 dark:text-slate-300">
+                        Sessão expira em: <span id="cronometro-sessao" class="font-mono font-bold text-slate-900 dark:text-white"></span>
+                    </span>
+                </div>
+                {% endif %}
+                <button onclick="window.location.reload();" 
+                    class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    title="Atualizar página">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+                <button id="toggleTheme" 
+                    class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    title="Alternar tema">
+                    <i class="fa-solid fa-moon text-sm"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="p-6 flex-1" id="conteudo-principal">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <div id="ios-pwa-prompt">
+        <button class="close-ios-prompt" onclick="this.parentElement.style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+        <p><i class="fa-brands fa-apple text-blue-500 mr-1"></i> Instale o GestorPro no seu iPhone</p>
+        <div class="ios-steps">
+            <span>Para usar em tela cheia: toque em</span>
+            <i class="fa-solid fa-share-nodes text-blue-500 text-base"></i>
+            <span>(Compartilhar) e depois em <strong>"Adicionar à Tela de Início"</strong>.</span>
+        </div>
+    </div>
+
+    {% if request.user.is_authenticated %}
+    <div id="modal-inactivity" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
+        <div class="max-w-md w-full bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 p-6 text-center animate-fade-in">
+            
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-500 dark:text-amber-400 mb-4 animate-pulse">
+                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                </svg>
+            </div>
+
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                Sua sessão está prestes a expirar!
+            </h3>
+            
+            <p class="text-sm text-slate-600 dark:text-slate-300 mb-6">
+                Você está inativo há algum tempo. Por segurança, o GestorPro irá desconectar sua conta em 
+                <span id="cronometro-modal" class="font-mono font-extrabold text-red-500 dark:text-red-400 text-base">60</span> segundos.
+            </p>
+
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="{% url 'logout_view' %}" 
+                class="inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors">
+                    Sair agora
+                </a>
+                <button id="btn-manter-conectado"
+                        class="inline-flex justify-center items-center px-5 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 rounded-lg shadow-sm transition-colors">
+                    Permanecer conectado
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="loading-overlay" class="fixed inset-0 z-[9999] hidden flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm transition-opacity cursor-wait">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mb-4"></div>
+        <h2 class="text-xl font-bold text-white">Processando...</h2>
+        <p class="text-slate-300 mt-2 text-sm">Por favor, aguarde enquanto carregamos as informações.</p>
+    </div>
+    {% endif %}
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+
+    <script>
+        function showLoading() {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+        }
+        // Configurações de tempo (em segundos)
+        const MAX_TEMPO_SEGUNDOS = 15 * 60; // 15 minutos de sessão total
+        const TEMPO_AVISO_MODAL = 60;        // Abrir modal faltando 60 segundos
+        
+        let tempoRestante = MAX_TEMPO_SEGUNDOS;
+        let intervaloContagem;
+        let modalAberto = false;
+
+        // Seletores dos elementos HTML
+        const elementoTimerNavbar = document.getElementById('cronometro-sessao');
+        const elementoTimerModal = document.getElementById('cronometro-modal');
+        const modalInatividade = document.getElementById('modal-inactivity');
+        const btnManterConectado = document.getElementById('btn-manter-conectado');
+
+        function formatarTempo(segundos) {
+            const minutos = Math.floor(segundos / 60);
+            const segs = segundos % 60;
+            return `${minutos.toString().padStart(2, '0')}:${segs.toString().padStart(2, '0')}`;
+        }
+
+        function atualizarInterface() {
+            // Atualiza o reloginho discreto da Navbar se ele existir
+            if (elementoTimerNavbar) {
+                elementoTimerNavbar.innerText = formatarTempo(tempoRestante);
+                if (tempoRestante <= TEMPO_AVISO_MODAL) {
+                    elementoTimerNavbar.classList.add('text-red-500', 'dark:text-red-400');
+                } else {
+                    elementoTimerNavbar.classList.remove('text-red-500', 'dark:text-red-400');
+                }
+            }
+
+            // Atualiza o contador gigante dentro do Modal
+            if (elementoTimerModal && modalAberto) {
+                elementoTimerModal.innerText = tempoRestante;
+            }
+        }
+
+        function contarSegundo() {
+            tempoRestante--;
+            atualizarInterface();
+
+            // Dispara o Modal quando atinge o tempo limite de aviso
+            if (tempoRestante <= TEMPO_AVISO_MODAL && !modalAberto) {
+                modalAberto = true;
+                if (modalInatividade) modalInatividade.classList.remove('hidden');
+            }
+
+            // Tempo esgotado: manda para o logout
+            if (tempoRestante <= 0) {
+                clearInterval(intervaloContagem);
+                window.location.href = "{% url 'logout_view' %}";
+            }
+        }
+
+        function resetarTemporizador() {
+            // Se o modal estiver aberto, o usuário parou de interagir de verdade. 
+            // Movimentos acidentais de mouse não devem fechar o modal.
+            if (modalAberto) return;
+
+            tempoRestante = MAX_TEMPO_SEGUNDOS;
+            atualizarInterface();
+            
+            clearInterval(intervaloContagem);
+            intervaloContagem = setInterval(contarSegundo, 1000);
+        }
+
+        // Função crucial: Diz para o Django que o usuário está ativo sem atualizar a página
+        function renovarSessaoNoBackend() {
+            // Faz uma requisição fictícia em segundo plano para a própria página atual.
+            // Como 'SESSION_SAVE_EVERY_REQUEST = True' está ativo no seu settings.py,
+            // qualquer requisição (mesmo via Fetch/AJAX) renova a sessão no banco do Django.
+            fetch(window.location.href)
+                .then(() => {
+                    modalAberto = false;
+                    if (modalInatividade) modalInatividade.classList.add('hidden');
+                    resetarTemporizador();
+                })
+                .catch(err => console.error("Erro ao renovar sessão:", err));
+        }
+
+        // Ativa os ouvintes de eventos se o usuário estiver logado
+        {% if request.user.is_authenticated %}
+            document.addEventListener('DOMContentLoaded', () => {
+                resetarTemporizador();
+                
+                // Configura o clique do botão do modal
+                if (btnManterConectado) {
+                    btnManterConectado.addEventListener('click', renovarSessaoNoBackend);
+                }
+            });
+
+            // Eventos normais do usuário mexendo no sistema
+            window.addEventListener('mousemove', resetarTemporizador);
+            window.addEventListener('mousedown', resetarTemporizador);
+            window.addEventListener('touchstart', resetarTemporizador);
+            window.addEventListener('click', resetarTemporizador);
+            window.addEventListener('keydown', resetarTemporizador);
+        {% endif %}
+    </script>
+
+    <script>
+        let currentZoom = 1;
+
+        function alterarZoom(delta) {
+            currentZoom += delta;
+            
+            // Limites para não deixar a página invisível ou gigante demais
+            if (currentZoom < 0.5) currentZoom = 0.5;
+            if (currentZoom > 2) currentZoom = 2;
+
+            // Aplica ao elemento principal que envolve o conteúdo (geralmente o body ou uma div container)
+            document.getElementById('conteudo-principal').style.transform = `scale(${currentZoom})`;
+            document.getElementById('conteudo-principal').style.transformOrigin = "0 0"; // Mantém o zoom no canto superior esquerdo
+            document.getElementById('conteudo-principal').style.width = `${100 / currentZoom}%`; // Ajusta a largura para compensar a escala
+        }
+
+        function resetarZoom() {
+            currentZoom = 1;
+            document.getElementById('conteudo-principal').style.transform = "scale(1)";
+            document.getElementById('conteudo-principal').style.width = "100%";
+        }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const btnToggleSidebar = document.getElementById('toggleSidebar');
+
+            const toggleSidebarState = (forceExpand = false) => {
+                if (forceExpand) {
+                    sidebar.classList.remove('collapsed');
+                    mainContent.classList.remove('expanded');
+                    localStorage.setItem('gestorpro_sidebar', 'false');
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('expanded');
+                    localStorage.setItem('gestorpro_sidebar', sidebar.classList.contains('collapsed') ? 'true' : 'false');
+                }
+            };
+
+            if (localStorage.getItem('gestorpro_sidebar') === 'false') {
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.remove('expanded');
+            } else {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
+            }
+
+            btnToggleSidebar.addEventListener('click', () => toggleSidebarState());
+
+            document.querySelectorAll('[data-collapse-toggle]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (sidebar.classList.contains('collapsed')) toggleSidebarState(true);
+                });
+            });
+
+            document.querySelectorAll('#sidebar a').forEach(link => {
+                link.addEventListener('click', () => {
+                    if (!sidebar.classList.contains('collapsed')) {
+                        sidebar.classList.add('collapsed');
+                        mainContent.classList.add('expanded');
+                        localStorage.setItem('gestorpro_sidebar', 'true');
+                    }
+                });
+            });
+
+            const btnTheme = document.getElementById('toggleTheme');
+            const themeIcon = btnTheme.querySelector('i');
+            
+            const updateIcon = () => {
+                themeIcon.className = document.documentElement.classList.contains('dark') ? 'fa-solid fa-sun text-sm' : 'fa-solid fa-moon text-sm';
+            };
+            updateIcon();
+
+            btnTheme.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                const isDark = document.documentElement.classList.contains('dark');
+                localStorage.setItem('gestorpro_theme', isDark ? 'dark' : 'light');
+                updateIcon();
+            });
+
+            // Registro PWA Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js') 
+                .then((reg) => {
+                    console.log('Service Worker registrado com sucesso! Escopo:', reg.scope);
+                })
+                .catch((err) => {
+                    console.error('Falha ao registrar Service Worker:', err);
+                });
+            }
+
+            const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+
+            if (isIos && !isStandalone) {
+                const iosPrompt = document.getElementById('ios-pwa-prompt');
+                if (iosPrompt) {
+                    iosPrompt.style.display = 'block';
+                }
+            }
+        });
+    </script>
+    <script>
+        // O evento 'load' só dispara quando TODO o HTML, imagens e scripts terminam de baixar
+        window.addEventListener('load', function () {
+            const telaBloqueio = document.getElementById('tela-bloqueio');
+            
+            if (telaBloqueio) {
+                // 1. Inicia o efeito visual de sumir suavemente (fade out)
+                telaBloqueio.classList.add('opacity-0');
+                
+                // 2. Remove o elemento da tela após a animação (500ms) para liberar os cliques
+                setTimeout(() => {
+                    telaBloqueio.style.display = 'none';
+                }, 500);
+            }
+        });
+
+        // Desbloqueia a tela forçadamente após 5 segundos, mesmo se der erro no carregamento
+        setTimeout(() => {
+            const telaBloqueio = document.getElementById('tela-bloqueio');
+            if (telaBloqueio && telaBloqueio.style.display !== 'none') {
+                telaBloqueio.classList.add('opacity-0');
+                setTimeout(() => telaBloqueio.style.display = 'none', 500);
+            }
+        }, 10000); // 5000 milissegundos = 5 segundos
+    </script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

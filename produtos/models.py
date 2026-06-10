@@ -1,0 +1,36 @@
+from django.db import models
+from django.contrib.auth.models import User
+
+from controle.models import Loja
+
+
+class Produto(models.Model):
+    cod_produto = models.IntegerField(primary_key=True, verbose_name='Código do produto')
+    desc_produto = models.CharField(max_length=500, verbose_name='Descrição do produto')
+    cod_gtin_principal = models.CharField(max_length=50, verbose_name='Código de barras principal')
+    cod_gtins_disponiveis = models.CharField(max_length=500, verbose_name='Código de barras disponíveis')
+    dt_cadastro = models.CharField(verbose_name='Data de cadastro')
+    dt_ult_alteracao = models.CharField(verbose_name='Data da última alteração')
+    status_produto = models.CharField(max_length=50, verbose_name='Status do produto')
+    desc_marca = models.CharField(null=True, blank=True, max_length=500, verbose_name='Descrição da marca do produto')
+    foto_produto = models.FileField(null=True, blank=True)
+    caixa = models.BooleanField(default=False, verbose_name='Indicação que o produto é caixa')
+
+
+class Validade(models.Model):
+
+    TIPO_LOTE_CHOICES = [('TF', 'TROCA FORNECEDOR'), ('SG', 'SEM GARANTIA')]
+
+    id_produto = models.ForeignKey(Produto, on_delete=models.CASCADE, verbose_name='Código do produto')
+    cod_loja = models.ForeignKey(Loja, on_delete=models.CASCADE, verbose_name='Código da loja')
+    usuario_cadastro = models.ForeignKey(User, on_delete=models.CASCADE, related_name='Usuário de cadastro+')
+    usuario_ultimo = models.ForeignKey(User, on_delete=models.CASCADE, related_name='Usuário da última alteração+')
+    data_cadastro = models.DateTimeField(auto_now_add=True, verbose_name='Data e hora de cadastro')
+    data_ultima = models.DateTimeField(auto_now=True, verbose_name='Data e hora da última alteração')
+    num_lote = models.CharField(max_length=50, verbose_name='Lote do produto')
+    dt_validade = models.DateField(verbose_name='Data de validade')
+    qt_lote = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Quantidade do item do lote')
+    tipo_lote = models.CharField(max_length=100, choices=TIPO_LOTE_CHOICES, verbose_name='Tipo do lote do produto')
+    obs_geral = models.TextField(max_length=500, verbose_name='Observações gerais')
+    ativo = models.BooleanField(default=True, verbose_name='Status do lote')
+    promocao_ativa = models.BooleanField(default=False, verbose_name='Promoção ativa')

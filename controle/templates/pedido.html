@@ -1,0 +1,965 @@
+{% extends 'base.html' %}
+
+{% block title %}Painel de Compras | GestorPro{% endblock %}
+{% block page_name %}Pedido de Compra{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Variáveis Base do Tema - Adaptadas para o padrão do Tailwind (Light Mode por padrão) */
+    :root {
+        --gp-bg-main: #f1f5f9;
+        --gp-text-main: #1e293b;
+        --gp-text-muted: #64748b;
+        --gp-card-bg: #ffffff;
+        --gp-border: rgba(0, 0, 0, 0.08);
+        --gp-hover-bg: rgba(59, 130, 246, 0.05);
+        --gp-accent: #3b82f6;
+        --gp-card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+        /* Variáveis Específicas do Pedido (Light Mode) */
+        --gp-ped-discount: #16a34a;
+        --gp-ped-sug: #0ea5e9;
+        --gp-ped-th-bg: #f8fafc;
+        --gp-ped-bonif-bg: #f0fdf4;
+        --gp-ped-bonif-border: #bbf7d0;
+        --gp-ped-table-border: rgba(0, 0, 0, 0.1);
+        --gp-ped-totals-bg: rgba(255, 255, 255, 0.95);
+    }
+
+    /* Adaptação para o Dark Mode do Tailwind (.dark no html) */
+    .dark {
+        --gp-bg-main: #0b0f19;
+        --gp-text-main: #f8fafc;
+        --gp-text-muted: #94a3b8;
+        --gp-card-bg: #1e293b;
+        --gp-border: rgba(255,255,255,0.05);
+        --gp-hover-bg: rgba(59, 130, 246, 0.15);
+        --gp-accent: #3b82f6;
+        --gp-card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+        /* Variáveis Específicas do Pedido (Dark Mode) */
+        --gp-ped-discount: #4ade80;
+        --gp-ped-sug: #38bdf8;
+        --gp-ped-th-bg: rgba(15, 23, 42, 0.95);
+        --gp-ped-bonif-bg: rgba(74, 222, 128, 0.1);
+        --gp-ped-bonif-border: rgba(74, 222, 128, 0.3);
+        --gp-ped-table-border: rgba(255, 255, 255, 0.1);
+        --gp-ped-totals-bg: rgba(15, 23, 42, 0.95);
+    }
+
+    #app { padding-bottom: 120px; }
+
+    /* CSS BASE PARA TELAS GRANDES */
+    .product-card { background: var(--gp-card-bg); border-radius: 12px; box-shadow: var(--gp-card-shadow); margin-bottom: 20px; border: 1px solid var(--gp-border); overflow: hidden; }
+    .product-header { background: var(--gp-hover-bg); padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--gp-border); align-items: center; }
+    .info-box { display: flex; flex-direction: column; flex: 1; text-align: center; align-items: center;}
+    .info-box.desc { flex: 2; min-width: 150px; text-align: left; align-items: flex-start;}
+    .label { font-size: 0.70rem; font-weight: 700; color: var(--gp-text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .value { font-size: 0.85rem; font-weight: 600; color: var(--gp-text-main); margin-top: 2px; }
+    .desc-main { color: var(--gp-accent) !important; font-size: 0.95rem !important; font-weight: 700; }
+    
+    .res-compra-header, .res-net-header { font-size: 0.85rem; font-weight: 800; color: var(--gp-ped-discount); }
+    .res-sug-header { font-size: 0.85rem; font-weight: 800; color: var(--gp-ped-sug); }
+    .res-venda-header { font-size: 0.85rem; font-weight: 800; color: var(--gp-text-muted); }
+
+    .price-group { display: flex; flex-wrap: wrap; gap: 10px; background: var(--gp-bg-main); padding: 8px; border-radius: 8px; border: 1px solid var(--gp-border); align-items: center; flex: 2; text-align: center; }
+
+    .input-header, .input-qty, .input-bonif { background-color: var(--gp-card-bg); color: var(--gp-text-main); border: 1px solid var(--gp-border); border-radius: 4px; text-align: center; outline: none; }
+    .input-header { width: 70px; padding: 3px 2px; font-weight: bold; font-size: 0.75rem; }
+    .input-qty { width: 100%; padding: 4px 0; font-size: 0.85rem; }
+    .input-bonif { width: 100%; padding: 4px 0; font-size: 0.85rem; background-color: var(--gp-ped-bonif-bg); color: var(--gp-ped-discount); border-color: var(--gp-ped-bonif-border); font-weight: 600; }
+    .input-header:focus, .input-qty:focus, .input-bonif:focus { border-color: var(--gp-accent); }
+
+    .multi-input-group { display: flex; gap: 4px; margin-top: 3px; }
+    .divider-left { border-left: 1px solid var(--gp-border); padding-left: 10px; margin-left: 5px; }
+
+    .controls { display: flex; flex-direction: column; gap: 8px; justify-content: center; min-width: 140px; }
+    .controls-row { display: flex; gap: 5px; width: 100%; }
+    
+    .bonif-orient { background: var(--gp-bg-main); border: 1px dashed var(--gp-border); padding: 6px; border-radius: 6px; text-align: center; }
+    .bonif-orient .label { font-size: 0.65rem; color: var(--gp-text-muted); display: block; margin-bottom: 4px; }
+    .bonif-orient select { width: 100%; border: 1px solid var(--gp-border); border-radius: 4px; padding: 4px; font-size: 0.75rem; background: var(--gp-card-bg); color: var(--gp-text-main); font-weight: 600; outline: none; cursor: pointer; }
+
+    /* Estilos Gerais da Tabela */
+    .table-container { width: 100%; overflow: auto; max-height: 400px; -webkit-overflow-scrolling: touch; }
+    .table-container table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.75rem; table-layout: fixed; }
+    .table-container th, .table-container td { padding: 6px 8px; border-bottom: 1px solid var(--gp-border); border-right: 1px solid var(--gp-border); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .table-container th { background: var(--gp-ped-th-bg); color: var(--gp-text-muted); position: sticky; top: 0; z-index: 20; font-weight: 600; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.5px; }
+    .table-container td { background: var(--gp-card-bg); color: var(--gp-text-main); }
+    
+    .sticky-col { position: sticky !important; z-index: 10; background: var(--gp-card-bg) !important; }
+    thead th.sticky-col { z-index: 30 !important; background: var(--gp-ped-th-bg) !important; }
+
+    .row-active td { background: var(--gp-hover-bg) !important; }
+    .row-active .sticky-col { background: var(--gp-hover-bg) !important; }
+
+    tfoot td { background: var(--gp-ped-th-bg) !important; color: var(--gp-text-main); font-weight: 800; position: sticky; bottom: 0; z-index: 25; padding: 8px; border-top: 2px solid var(--gp-accent); }
+
+    th { position: relative; }
+    .resizer { position: absolute; top: 0; right: 0; width: 6px; cursor: col-resize; user-select: none; height: 100%; z-index: 100; }
+    .resizer:hover, .resizing { background-color: var(--gp-accent); border-right: 1px solid var(--accent); }
+    
+    /* Barra de Totais Fixa Inferior */
+    .global-totals { position: fixed; bottom: 0; left: 280px; right: 0; background: var(--gp-ped-totals-bg); backdrop-filter: blur(12px); color: var(--gp-text-main); display: flex; align-items: center; justify-content: space-between; padding: 12px 30px; box-shadow: 0 -10px 25px -5px rgba(0,0,0,0.1); z-index: 1000; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-top: 1px solid var(--gp-border); }
+    .main-content.expanded .global-totals { left: 85px; }
+    .totals-group { display: flex; gap: 25px; align-items: center; }
+    .action-group { display: flex; gap: 10px; align-items: center; }
+    .global-item { display: flex; flex-direction: column; align-items: center; }
+    .global-item .lbl { font-size: 0.70rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gp-text-muted); font-weight: 600; margin-bottom: 2px; }
+    .global-item .val { font-size: 1.3rem; font-weight: 800; color: var(--gp-text-main); text-align: center;}
+    .global-item .val.highlight { color: var(--gp-ped-sug); }
+    .weight-group { display: flex; gap: 15px; background: var(--gp-bg-main); padding: 6px 15px; border-radius: 8px; border: 1px solid var(--gp-border); }
+    .weight-detail { font-size: 0.75rem; color: var(--gp-text-muted); display: flex; flex-direction: column; align-items: center; justify-content: center;}
+    .weight-detail span { font-weight: 800; color: var(--gp-text-main); font-size: 0.95rem;}
+    .btn-select { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--gp-border); background-color: var(--gp-card-bg); color: var(--gp-text-main); font-weight: 600; cursor: pointer; outline: none; font-size: 0.85rem; appearance: auto; }
+
+    .mobile-totals-toggle { display: none; }
+    .close-footer-mobile { display: none; }
+
+    /* ==========================================================================
+       MEDIA QUERY ULTRA COMPACTA (NOTEBOOKS)
+       ========================================================================== */
+    @media (min-width: 993px) and (max-width: 1366px) {
+        .table-container table { font-size: 0.65rem; letter-spacing: -0.03em; }
+        .table-container th { font-size: 0.58rem; padding: 3px 1px; }
+        .table-container td { padding: 3px 1px; font-variant-numeric: tabular-nums; }
+        .input-qty, .input-bonif { font-size: 0.70rem; padding: 1px 0; height: 18px; }
+        .product-header { gap: 4px; padding: 4px 6px; }
+        .desc-main { font-size: 0.80rem !important; line-height: 1.1; }
+        .info-box .value { font-size: 0.72rem; }
+        .info-box .label { font-size: 0.58rem; letter-spacing: 0px; }
+        .price-group { gap: 3px; padding: 3px; flex: 3; }
+        .multi-input-group { gap: 2px; }
+        .multi-input-group .input-header { width: 42px; padding: 1px; font-size: 0.68rem; height: 18px; }
+        .input-header { width: 48px; font-size: 0.68rem; padding: 1px; height: 18px; }
+        .res-compra-header, .res-net-header, .res-sug-header, .res-venda-header { font-size: 0.72rem; }
+        .controls { min-width: 100px; gap: 3px; }
+        .controls-row button { padding: 3px 1px; font-size: 0.62rem; }
+        .bonif-orient { padding: 2px; }
+        .bonif-orient select { font-size: 0.68rem; padding: 1px; height: 18px; }
+        tfoot td { font-size: 0.65rem; padding: 4px; }
+        .global-totals { padding: 4px 10px; height: 50px; }
+        .totals-group { gap: 8px; }
+        .global-item .lbl { font-size: 0.62rem; }
+        .global-item .val { font-size: 0.95rem; }
+        .weight-group { padding: 2px 6px; gap: 4px; }
+        .weight-detail { font-size: 0.65rem; }
+        .weight-detail span { font-size: 0.75rem; }
+        .btn-select { padding: 4px 6px; font-size: 0.70rem; height: 26px; }
+        .action-group button { padding: 4px 6px !important; font-size: 0.68rem !important; }
+    }
+
+    /* ==========================================================================
+       MEDIA QUERY OPTIMIZADA PARA DISPOSITIVOS MÓVEIS (SMARTPHONES)
+       ========================================================================== */
+    @media (max-width: 768px) {
+        #app { padding-bottom: 80px; } 
+
+        /* 1. Destravamento Inteligente de Colunas: Apenas Loja fica sticky */
+        .sticky-col:not([data-col="loja"]) {
+            position: static !important;
+            left: auto !important;
+            box-shadow: none !important;
+        }
+
+        /* Border right visual da área de preenchimento para a área de estoque */
+        th[data-col="subrs"], td.res-rs {
+            border-right: 2px solid var(--gp-ped-table-border) !important;
+        }
+
+        /* 2. Visibilidade Progressiva: Oculta colunas secundárias por padrão */
+        .col-hide-mobile {
+            display: none !important;
+        }
+        
+        /* Quando a classe alternadora estiver ativa, revela tudo em modo expandido */
+        .show-all-columns-mobile .col-hide-mobile {
+            display: table-cell !important;
+        }
+
+        /* 3. Reestruturação Completa do Cabeçalho do Produto em Grid Nativo */
+        .product-header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            padding: 10px;
+        }
+        .info-box.desc {
+            width: 100%;
+            flex: none;
+            border-bottom: 1px dashed var(--gp-border);
+            padding-bottom: 6px;
+        }
+        .desc-main { font-size: 0.90rem !important; }
+
+        .price-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            padding: 8px;
+            flex: none;
+            width: 100%;
+        }
+        .price-group .info-box {
+            border: none !important;
+            padding: 4px !important;
+            margin: 0 !important;
+            align-items: center;
+            text-align: center;
+            background: var(--gp-card-bg);
+            border-radius: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        /* Faz os agrupamentos de descontos e impostos ocuparem a linha toda */
+        .col-span-mob-2 {
+            grid-column: span 2;
+        }
+        .multi-input-group {
+            justify-content: center;
+            width: 100%;
+        }
+        .multi-input-group .input-header {
+            flex: 1;
+            max-width: 60px;
+        }
+
+        .controls {
+            flex-direction: row;
+            width: 100%;
+            gap: 10px;
+            min-width: 100%;
+        }
+        .bonif-orient { flex: 1.2; padding: 4px; }
+        .controls-row { flex: 1; flex-direction: column; gap: 4px; }
+        .controls-row button { width: 100%; padding: 6px !important; }
+
+        /* 4. Menu de Totais Flutuante Mobile */
+        .global-totals { 
+            left: 0 !important; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            gap: 12px; 
+            padding: 25px 12px 12px 12px; 
+            flex-direction: column; 
+            transform: translateY(120%); 
+            border-radius: 16px 16px 0 0;
+        }
+        .global-totals.expanded-mobile {
+            transform: translateY(0);
+            box-shadow: 0 -15px 30px -5px rgba(0,0,0,0.3);
+        }
+        .totals-group, .action-group { width: 100%; justify-content: space-between; flex-wrap: wrap; }
+        .weight-group { width: 100%; justify-content: center; margin: 4px 0; }
+
+        .mobile-totals-toggle {
+            display: flex;
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            background: var(--gp-accent);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            align-items: center;
+            gap: 6px;
+            z-index: 999; 
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            border: none;
+            cursor: pointer;
+        }
+        .close-footer-mobile {
+            display: absolute;
+            position: absolute;
+            top: 4px;
+            right: 12px;
+            background: none;
+            border: none;
+            color: var(--gp-text-muted);
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 4px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="bg-[var(--gp-card-bg)] rounded-xl p-3 mb-4 border border-[var(--gp-border)] shadow-sm flex flex-col md:flex-row justify-between items-center flex-wrap gap-3">
+        <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-start">
+            <button class="flex items-center gap-2 px-3 py-1.5 text-xs font-medium border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition" onclick="resetLayout()" title="Restaurar layout original das colunas">
+                <i class="fa-solid fa-rotate-left"></i> Restaurar Colunas
+            </button>
+            
+            <button class="flex items-center gap-2 px-3 py-1.5 text-xs font-medium border border-blue-300 dark:border-blue-600 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 transition md:hidden" onclick="toggleMobileColumns()" id="btn-toggle-cols">
+                <i class="fa-solid fa-eye"></i> Ver Todas Colunas
+            </button>
+        </div>
+        
+        <div class="flex flex-wrap gap-1.5 text-xs w-full md:w-auto">
+            <span class="border border-[var(--gp-border)] py-1 px-2.5 rounded text-[var(--gp-text-main)] bg-[var(--gp-bg-main)] flex-1 md:flex-none text-center">
+                <strong class="text-blue-600 dark:text-blue-400 mr-1">Fornecedor:</strong> {{ fornecedor|default:"Não informado" }}
+            </span>
+        </div>
+
+        <div class="flex gap-2 w-full md:w-auto justify-end">
+            <div class="border border-[var(--gp-border)] py-1 px-2.5 rounded font-mono flex items-center text-[var(--gp-text-muted)] bg-[var(--gp-bg-main)] text-xs" id="clock-display">
+                00/00/0000 00:00:00
+            </div>
+            <div class="bg-blue-600 text-white py-1 px-2.5 rounded font-mono flex items-center gap-1.5 shadow-sm text-xs">
+                <i class="fa-solid fa-stopwatch"></i> <span id="stopwatch-display">00:00:00</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="app">
+        {% for p in produtos %}
+        <div class="product-card" id="card-{{ p.id }}" data-t-qtd="0" data-t-bonif="0" data-t-rs="0" data-t-kg-ped="0" data-t-kg-bonif="0">
+            <div class="product-header">
+                <div class="info-box desc"><span class="label">Descrição</span><span class="value desc-main">{{ p.desc }}</span></div>
+                
+                <div class="w-full flex justify-between gap-2 border-t md:border-t-0 pt-2 md:pt-0">
+                    <div class="text-left"><span class="label">Ref | GTIN:</span> <span class="value text-xs font-mono">{{ p.fab }} | {{ p.ean }}</span></div>
+                    <div class="text-right"><span class="label">Emb:</span> <span class="value text-xs">{{ p.emb }} ({{ p.peso|stringformat:".2f" }}kg)</span></div>
+                </div>
+
+                <div class="price-group">
+                    <div class="info-box">
+                        <span class="label">Preço Base</span>
+                        <input type="number" class="input-header in-base decimal-input !w-full" value="{{ p.preco|stringformat:'.2f' }}" step="0.01" oninput="recalcular({{ p.id }})">
+                    </div>
+                    
+                    <div class="info-box col-span-mob-2">
+                        <span class="label">Desc. (%) [1|2|3]</span>
+                        <div class="multi-input-group">
+                            <input type="number" class="input-header in-desc1 decimal-input" value="0.00" step="0.01" oninput="recalcular({{ p.id }})">
+                            <input type="number" class="input-header in-desc2 decimal-input" value="0.00" step="0.01" oninput="recalcular({{ p.id }})">
+                            <input type="number" class="input-header in-desc3 decimal-input" value="0.00" step="0.01" oninput="recalcular({{ p.id }})">
+                        </div>
+                    </div>
+                    
+                    <div class="info-box">
+                        <span class="label">Pr. Compra</span>
+                        <span class="value res-compra-header">R$ 0,00</span>
+                    </div>
+                    
+                    <div class="info-box">
+                        <span class="label">Pr. Inventário</span>
+                        <span class="value res-net-header">R$ 0,00</span>
+                    </div>
+
+                    <div class="info-box col-span-mob-2">
+                        <span class="label">Tributos Fed. (%) | Est. (%)</span>
+                        <div class="multi-input-group">
+                            <input type="number" class="input-header in-imp-fed decimal-input" value="{{ p.imp_fed|stringformat:'.2f' }}" step="0.01" oninput="recalcular({{ p.id }})">
+                            <input type="number" class="input-header in-imp-est decimal-input" value="{{ p.imp_est|stringformat:'.2f' }}" step="0.01" oninput="recalcular({{ p.id }})">
+                        </div>
+                    </div>
+                    
+                    <div class="info-box">
+                        <span class="label">Margem (%)</span>
+                        <input type="number" class="input-header in-margem decimal-input !w-full" value="{{ p.margem|stringformat:'.2f' }}" max="99.99" step="0.01" oninput="recalcular({{ p.id }})">
+                    </div>
+                    <div class="info-box">
+                        <span class="label">Pr. Sugestão</span>
+                        <span class="value res-sug-header">R$ 0,00</span>
+                    </div>
+                    <div class="info-box col-span-mob-2 !bg-blue-50 dark:!bg-slate-800">
+                        <span class="label">Pr. Venda Atual</span>
+                        <span class="value res-venda-header">R$ {{ p.preco_venda|floatformat:2 }}</span>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <div class="bonif-orient">
+                        <span class="label">Orientação Bonif.</span>
+                        <select class="sel-bonif-tipo">
+                            <option value="compra">Preço Compra</option>
+                            <option value="meia">Meia-nota (50%)</option>
+                        </select>
+                    </div>
+                    <div class="controls-row">
+                        <button class="text-white bg-blue-600 hover:bg-blue-700 py-1.5 px-2 rounded font-semibold text-xs transition" onclick="copiar({{ p.id }})">Copiar Sug.</button>
+                        <button class="text-white bg-slate-600 hover:bg-slate-700 py-1.5 px-2 rounded font-semibold text-xs transition" onclick="limpar({{ p.id }})">Limpar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container custom-scrollbar">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="sticky-col" data-col="loja" style="width: 42px;">Loja</th>
+                            <th class="sticky-col" data-col="sug" style="width: 42px; color: var(--gp-ped-sug);">Sug.</th>
+                            <th class="sticky-col" data-col="ped" style="width: 60px;">Pedido</th>
+                            <th class="sticky-col" data-col="bonif" style="width: 60px; color: var(--gp-ped-discount);">Bonif.</th>
+                            <th class="sticky-col" data-col="subrs" style="width: 80px;">Subt. R$</th>
+                            <th class="sticky-col col-hide-mobile" data-col="subkg" style="width: 70px;">Subt. Kg</th>
+                            <th data-col="etotal" class="col-hide-mobile" style="width: 55px;">Est. Tot</th>
+                            <th data-col="edisp" style="width: 55px;">Est. Dis</th>
+                            <th data-col="eres" class="col-hide-mobile" style="width: 55px;">Est. Res</th>
+                            <th data-col="ebloq" class="col-hide-mobile" style="width: 55px;">Est. Blq</th>
+                            <th data-col="prec" style="width: 60px;">Pend. Rec</th>
+                            <th data-col="v30" style="width: 50px;">Vnd 30d</th>
+                            <th data-col="v60" class="col-hide-mobile" style="width: 50px;">Vnd 60d</th>
+                            <th data-col="v90" class="col-hide-mobile" style="width: 50px;">Vnd 90d</th>
+                            <th data-col="media" style="width: 50px;">Média</th>
+                            <th data-col="repo" style="width: 50px;">Repos.</th>
+                            <th data-col="uent" class="col-hide-mobile" style="width: 55px;">Últ. Ent</th>
+                            <th data-col="dent" class="col-hide-mobile" style="width: 70px;">Data Ent</th>
+                            <th data-col="usai" class="col-hide-mobile" style="width: 55px;">Últ. Saí</th>
+                            <th data-col="dsai" class="col-hide-mobile" style="width: 70px;">Data Saí</th>
+                            <th data-col="msai" class="col-hide-mobile" style="width: 70px;">Mrg. Saí</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loja in p.lojas %}
+                        <tr>
+                            <td class="sticky-col" style="font-weight: 700;">{{ loja.codigo }}</td>
+                            <td class="sticky-col val-sug" style="color: var(--gp-ped-sug); font-weight: 600;">{{ loja.sugestao }}</td>
+                            <td class="sticky-col">
+                                <input type="number" class="input-qty" min="0" oninput="recalcular({{ p.id }})">
+                            </td>
+                            <td class="sticky-col">
+                                <input type="number" class="input-bonif" min="0" oninput="recalcular({{ p.id }})">
+                            </td>
+                            <td class="sticky-col res-rs">R$ 0,00</td>
+                            <td class="sticky-col res-kg col-hide-mobile">0,00</td>
+                            <td class="col-hide-mobile">{{ loja.est_total }}</td>
+                            <td>{{ loja.est_disp }}</td>
+                            <td class="col-hide-mobile">{{ loja.est_res }}</td>
+                            <td class="col-hide-mobile">{{ loja.est_bloq }}</td>
+                            <td style="color:var(--gp-accent)">{{ loja.pend_rec }}</td>
+                            <td>{{ loja.venda_30d }}</td>
+                            <td class="col-hide-mobile">{{ loja.venda_60d }}</td>
+                            <td class="col-hide-mobile">{{ loja.venda_90d }}</td>
+                            <td style="background: var(--gp-bg-main)">{{ loja.media|floatformat:2 }}</td>
+                            <td>{{ loja.reposicao }}d</td>
+                            <td class="col-hide-mobile">{{ loja.grid_ult_ent|default:loja.ult_ent }}</td>
+                            <td class="col-hide-mobile">{{ loja.data_ent }}</td>
+                            <td class="col-hide-mobile">{{ loja.grid_ult_sai|default:loja.ult_sai }}</td>
+                            <td class="col-hide-mobile">{{ loja.data_sai }}</td>
+                            <td class="col-hide-mobile">{{ loja.margem_sai|default:"0,00" }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td class="sticky-col" data-col="loja" style="text-align: right;">TOTAIS:</td>
+                            <td class="sticky-col" data-col="sug"></td>
+                            <td class="sticky-col total-qtd" data-col="ped">0</td>
+                            <td class="sticky-col total-bonif" data-col="bonif" style="color: var(--gp-ped-discount);">0</td>
+                            <td class="sticky-col total-rs" data-col="subrs" style="color: var(--gp-accent);">R$ 0,00</td>
+                            <td class="sticky-col total-kg col-hide-mobile" data-col="subkg">0,00 kg</td>
+                            <td data-col="etotal" class="col-hide-mobile"></td>
+                            <td data-col="edisp"></td>
+                            <td data-col="eres" class="col-hide-mobile"></td>
+                            <td data-col="ebloq" class="col-hide-mobile"></td>
+                            <td data-col="prec"></td>
+                            <td data-col="v30"></td>
+                            <td data-col="v60" class="col-hide-mobile"></td>
+                            <td data-col="v90" class="col-hide-mobile"></td>
+                            <td data-col="media"></td>
+                            <td data-col="repo"></td>
+                            <td data-col="uent" class="col-hide-mobile"></td>
+                            <td data-col="dent" class="col-hide-mobile"></td>
+                            <td data-col="usai" class="col-hide-mobile"></td>
+                            <td data-col="dsai" class="col-hide-mobile"></td>
+                            <td data-col="msai" class="col-hide-mobile"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <button class="mobile-totals-toggle" id="btn-float-totals" onclick="toggleMobileTotals()">
+        <i class="fa-solid fa-calculator"></i> Ver Totais e Finalizar
+    </button>
+
+    <div class="global-totals">
+        <button class="close-footer-mobile" onclick="toggleMobileTotals()">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="action-group">
+            <select class="btn-select flex-1" id="tipo-entrega">
+                <option value="centro_logistico">CD Logístico</option>
+                <option value="por_loja">Direto Lojas</option>
+            </select>
+            
+            <select class="btn-select flex-1" id="global-bonif-tipo" onchange="aplicarRegraBonifGlobal()">
+                <option value="">-- Regra Bonif. --</option>
+                <option value="compra">Todos: P. Compra</option>
+                <option value="meia">Todos: Meia-Nota</option>
+            </select>
+        </div>
+        
+        <div class="flex gap-2 w-full justify-between my-1 md:w-auto md:my-0 md:ml-4">
+            <button class="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-[var(--gp-text-main)] font-semibold py-1.5 px-2 rounded border border-[var(--gp-border)] text-xs transition" onclick="copiarTodasSugestoes()">Copiar Sugestões</button>
+            <button class="flex-1 md:flex-none bg-slate-100 dark:bg-slate-800 text-[var(--gp-text-main)] font-semibold py-1.5 px-2 rounded border border-[var(--gp-border)] text-xs transition" onclick="limparTodasSugestoes()">Limpar Sugestões</button>
+        </div>
+
+        <div class="totals-group">
+            <div class="global-item">
+                <span class="lbl">Itens Pedido</span>
+                <span class="val" style="font-size: 0.85rem;">
+                    Cmp: <span id="gt-qtd" style="color: var(--gp-text-main);">0</span> | 
+                    Bnf: <span id="gt-bonif" style="color: var(--gp-ped-discount);">0</span>
+                </span>
+            </div>
+            
+            <div class="weight-group shadow-sm col-hide-mobile md:flex">
+                <div class="weight-detail">P. Compra<span id="gt-kg-ped">0,00</span></div>
+                <div class="weight-detail"><span>+</span></div>
+                <div class="weight-detail">P. Bonif.<span id="gt-kg-bonif" style="color: var(--gp-ped-discount);">0,00</span></div>
+                <div class="weight-detail"><span>=</span></div>
+                <div class="weight-detail">Peso Tot<span id="gt-kg-total" style="font-size: 1rem; color: var(--gp-ped-sug);">0,00</span></div>
+            </div>
+
+            <div class="global-item ml-2">
+                <span class="lbl">Total (R$)</span>
+                <span class="val highlight" id="gt-rs" style="font-size: 1.1rem;">R$ 0,00</span>
+            </div>
+        </div>
+
+        <div class="action-group">
+            <button class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-4 rounded-lg shadow transition text-xs" onclick="enviarPedido()">
+                <i class="fa-solid fa-check-double mr-1"></i> Finalizar Pedido
+            </button>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let tempoSegundos = 0;
+    
+    function formatTime(totalSeconds) {
+        const h = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+        const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+        const s = (totalSeconds % 60).toString().padStart(2, '0');
+        return `${h}:${m}:${s}`;
+    }
+
+    function atualizarRelogios() {
+        const agora = new Date();
+        const dataStr = agora.toLocaleDateString('pt-BR');
+        const horaStr = agora.toLocaleTimeString('pt-BR');
+        document.getElementById('clock-display').innerHTML = `<i class="fa-regular fa-calendar mr-1"></i> ${dataStr} ${horaStr}`;
+
+        tempoSegundos++;
+        document.getElementById('stopwatch-display').innerText = formatTime(tempoSegundos);
+    }
+
+    function calcularTotalGeral() {
+        let globalQtd = 0, globalBonif = 0, globalRs = 0;
+        let globalKgPed = 0, globalKgBonif = 0;
+        
+        document.querySelectorAll('.product-card').forEach(card => {
+            globalQtd += parseFloat(card.dataset.tQtd) || 0;
+            globalBonif += parseFloat(card.dataset.tBonif) || 0;
+            globalRs += parseFloat(card.dataset.tRs) || 0;
+            globalKgPed += parseFloat(card.dataset.tKgPed) || 0;
+            globalKgBonif += parseFloat(card.dataset.tKgBonif) || 0;
+        });
+
+        document.getElementById('gt-qtd').innerText = globalQtd;
+        document.getElementById('gt-bonif').innerText = globalBonif;
+        document.getElementById('gt-rs').innerText = `R$ ${globalRs.toFixed(2).replace('.',',')}`;
+        
+        document.getElementById('gt-kg-ped').innerText = globalKgPed.toFixed(2).replace('.',',')+' kg';
+        document.getElementById('gt-kg-bonif').innerText = globalKgBonif.toFixed(2).replace('.',',')+' kg';
+        document.getElementById('gt-kg-total').innerText = (globalKgPed + globalKgBonif).toFixed(2).replace('.',',')+' kg';
+    }
+
+    window.recalcular = function(id) {
+        const card = document.getElementById(`card-${id}`);
+        
+        const base = parseFloat(card.querySelector('.in-base').value) || 0;
+        const d1 = parseFloat(card.querySelector('.in-desc1').value) || 0;
+        const d2 = parseFloat(card.querySelector('.in-desc2').value) || 0;
+        const d3 = parseFloat(card.querySelector('.in-desc3').value) || 0;
+        const impFed = parseFloat(card.querySelector('.in-imp-fed').value) || 0;
+        const impEst = parseFloat(card.querySelector('.in-imp-est').value) || 0;
+        const margem = parseFloat(card.querySelector('.in-margem').value) || 0;
+        
+        // Proteção caso o elemento esteja oculto no mobile corporativo
+        const pBaseEl = card.querySelector('.card-peso-base');
+        const pesoBase = pBaseEl ? (parseFloat(pBaseEl.innerText.replace(',','.')) || 0) : 0;
+        
+        let baseDesc = base * (1 - (d1 / 100)) * (1 - (d2 / 100)) * (1 - (d3 / 100));
+        
+        let baseICMS = baseDesc * (impEst / 100);
+        let baseIF = (baseDesc - baseICMS) * (impFed / 100);
+        let precoLiq = baseDesc - baseICMS - baseIF; 
+        
+        let somaDeducoes = (margem + (impFed*(1-impEst/100)) + impEst) / 100;
+        let precoSug = 0;
+        if (somaDeducoes < 1) {
+            precoSug = precoLiq / (1 - somaDeducoes);
+        } else {
+            precoSug = precoLiq; 
+        }
+        
+        card.querySelector('.res-compra-header').innerText = `R$ ${baseDesc.toFixed(2).replace('.',',')}`;
+        card.querySelector('.res-net-header').innerText = `R$ ${precoLiq.toFixed(2).replace('.',',')}`;
+        card.querySelector('.res-sug-header').innerText = `R$ ${precoSug.toFixed(2).replace('.',',')}`;
+
+        let tQtd = 0, tBonif = 0, tRs = 0, tKgPed = 0, tKgBonif = 0;
+        
+        card.querySelectorAll('tbody tr').forEach(tr => {
+            const inputQty = tr.querySelector('.input-qty');
+            const inputBonif = tr.querySelector('.input-bonif');
+            
+            const qty = parseFloat(inputQty.value) || 0;
+            const bonif = parseFloat(inputBonif ? inputBonif.value : 0) || 0;
+            
+            tr.classList.toggle('row-active', qty > 0 || bonif > 0);
+            
+            const subRs = qty * baseDesc;
+            const pesoCompraLinha = qty * pesoBase;
+            const pesoBonifLinha = bonif * pesoBase;
+            const subKgTotalLinha = pesoCompraLinha + pesoBonifLinha;
+
+            tr.querySelector('.res-rs').innerText = `R$ ${subRs.toFixed(2).replace('.',',')}`;
+            
+            const kgEl = tr.querySelector('.res-kg');
+            if(kgEl) kgEl.innerText = subKgTotalLinha.toFixed(2).replace('.',',');
+
+            tQtd += qty; 
+            tBonif += bonif;
+            tRs += subRs; 
+            tKgPed += pesoCompraLinha;
+            tKgBonif += pesoBonifLinha;
+        });
+
+        card.querySelector('.total-qtd').innerText = tQtd; 
+        if(card.querySelector('.total-bonif')) card.querySelector('.total-bonif').innerText = tBonif;
+        card.querySelector('.total-rs').innerText = `R$ ${tRs.toFixed(2).replace('.',',')}`;
+        
+        const totKgEl = card.querySelector('.total-kg');
+        if(totKgEl) totKgEl.innerText = `${(tKgPed + tKgBonif).toFixed(2).replace('.',',')} kg`;
+
+        card.dataset.tQtd = tQtd;
+        card.dataset.tBonif = tBonif;
+        card.dataset.tRs = tRs;
+        card.dataset.tKgPed = tKgPed;
+        card.dataset.tKgBonif = tKgBonif;
+
+        calcularTotalGeral();
+    }
+
+    window.toggleMobileColumns = function() {
+        const app = document.getElementById('app');
+        app.classList.toggle('show-all-columns-mobile');
+        const btn = document.getElementById('btn-toggle-cols');
+        
+        if (app.classList.contains('show-all-columns-mobile')) {
+            btn.innerHTML = '<i class="fa-solid fa-eye-slash"></i> Simplificar Tabela';
+        } else {
+            btn.innerHTML = '<i class="fa-solid fa-eye"></i> Ver Todas Colunas';
+        }
+        // Força recálculo dos headers fixos após alterar a visibilidade do DOM
+        document.querySelectorAll('table').forEach(table => updateStickyPositions(table));
+    }
+
+    window.copiar = function(id) {
+        document.querySelectorAll(`#card-${id} tbody tr`).forEach(tr => { tr.querySelector('.input-qty').value = tr.querySelector('.val-sug').innerText; });
+        recalcular(id);
+    }
+
+    window.limpar = function(id) {
+        document.querySelectorAll(`#card-${id} tbody tr`).forEach(tr => {
+            if(tr.querySelector('.input-qty')) tr.querySelector('.input-qty').value = '';
+            if(tr.querySelector('.input-bonif')) tr.querySelector('.input-bonif').value = '';
+        });
+        recalcular(id);
+    }
+
+    window.copiarTodasSugestoes = function() {
+        if(confirm('Deseja preencher as quantidades de TODOS os produtos com as respectivas sugestões?')) {
+            document.querySelectorAll('.product-card').forEach(card => {
+                const id = card.id.replace('card-', '');
+                card.querySelectorAll('tbody tr').forEach(tr => { tr.querySelector('.input-qty').value = tr.querySelector('.val-sug').innerText; });
+                recalcular(id);
+            });
+        }
+    }
+
+    window.limparTodasSugestoes = function() {
+        if(confirm('Tem certeza que deseja zerar todas as quantidades e bonificações?')) {
+            document.querySelectorAll('.product-card').forEach(card => {
+                const id = card.id.replace('card-', '');
+                card.querySelectorAll('tbody tr').forEach(tr => {
+                    if(tr.querySelector('.input-qty')) tr.querySelector('.input-qty').value = '';
+                    if(tr.querySelector('.input-bonif')) tr.querySelector('.input-bonif').value = '';
+                });
+                recalcular(id);
+            });
+        }
+    }
+
+    window.aplicarRegraBonifGlobal = function() {
+        const val = document.getElementById('global-bonif-tipo').value;
+        if(!val) return;
+        
+        if(confirm('Aplicar esta orientação de bonificação para todos os produtos?')) {
+            document.querySelectorAll('.sel-bonif-tipo').forEach(sel => {
+                sel.value = val;
+            });
+        }
+        document.getElementById('global-bonif-tipo').value = ""; 
+    }
+
+    window.enviarPedido = function() {
+        const timeStr = document.getElementById('stopwatch-display').innerText;
+        const totalQs = document.getElementById('gt-qtd').innerText;
+        const totalBn = document.getElementById('gt-bonif').innerText;
+        const totalRs = document.getElementById('gt-rs').innerText;
+
+        if (parseFloat(totalQs) === 0 && parseFloat(totalBn) === 0) {
+            alert("Adicione quantidades antes de finalizar.");
+            return;
+        }
+        alert(`Resumo:\n\nTempo: ${timeStr}\nComprado: ${totalQs}\nBonificado: ${totalBn}\nValor: ${totalRs}`);
+    }
+
+    window.toggleMobileTotals = function() {
+        const totals = document.querySelector('.global-totals');
+        const floatBtn = document.getElementById('btn-float-totals');
+        
+        totals.classList.toggle('expanded-mobile');
+        
+        if (totals.classList.contains('expanded-mobile')) {
+            floatBtn.style.display = 'none';
+        } else {
+            floatBtn.style.display = 'flex';
+        }
+    }
+
+    function formatDecimalInputs() {
+        document.querySelectorAll('.decimal-input').forEach(input => {
+            input.addEventListener('blur', function() {
+                if(this.value !== '') {
+                    this.value = parseFloat(this.value).toFixed(2);
+                    const card = this.closest('.product-card');
+                    if(card) recalcular(card.id.replace('card-', ''));
+                }
+            });
+        });
+    }
+
+    function initEnterNavigation() {
+        const inputs = document.querySelectorAll('.input-qty, .input-bonif');
+        inputs.forEach(input => {
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); 
+                    const td = this.closest('td');
+                    const tr = td.parentElement;
+                    const tbody = tr.parentElement;
+                    const tdIndex = Array.from(tr.children).indexOf(td);
+                    const trIndex = Array.from(tbody.children).indexOf(tr);
+                    const nextTr = tbody.children[trIndex + 1];
+
+                    if (nextTr) {
+                        const nextInput = nextTr.children[tdIndex].querySelector('input');
+                        if (nextInput) {
+                            nextInput.focus();
+                            nextInput.select(); 
+                        }
+                    }
+                }
+            });
+        });
+    }
+
+    const STORAGE_KEY = 'petshop_table_layout_v6'; 
+
+    function saveLayout(table) {
+        if (!table || window.innerWidth <= 768) return; // Não salva alteração de layout gerada pelo mobile
+        const headers = table.querySelectorAll('thead th');
+        const layout = Array.from(headers).map(th => ({
+            id: th.dataset.col,
+            width: th.offsetWidth + 'px'
+        }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
+    }
+
+    function loadLayout() {
+        if (window.innerWidth <= 768) return;
+        const url = new URL(window.location);
+        if (url.searchParams.has('reset')) {
+            url.searchParams.delete('reset');
+            window.history.replaceState({}, document.title, url.pathname);
+            return;
+        }
+
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return;
+
+        const layout = JSON.parse(saved);
+
+        document.querySelectorAll('table').forEach(table => {
+            const theadRow = table.querySelector('thead tr');
+            const tbodyRows = table.querySelectorAll('tbody tr');
+            const tfootRow = table.querySelector('tfoot tr');
+            
+            if (!theadRow) return;
+            const originalOrder = Array.from(theadRow.children).map(th => th.dataset.col);
+
+            const thMap = {};
+            Array.from(theadRow.children).forEach(th => { thMap[th.dataset.col] = th; });
+
+            layout.forEach(col => {
+                if (thMap[col.id]) {
+                    theadRow.appendChild(thMap[col.id]);
+                    thMap[col.id].style.width = col.width;
+                }
+            });
+
+            tbodyRows.forEach(row => {
+                const tdMap = {};
+                Array.from(row.children).forEach((td, index) => {
+                    const colId = originalOrder[index];
+                    if (colId) tdMap[colId] = td;
+                });
+                layout.forEach(col => { if (tdMap[col.id]) row.appendChild(tdMap[col.id]); });
+            });
+
+            if (tfootRow) {
+                const tdMap = {};
+                Array.from(tfootRow.children).forEach((td, index) => {
+                    const colId = originalOrder[index];
+                    if (colId) tdMap[colId] = td;
+                });
+                layout.forEach(col => { if (tdMap[col.id]) tfootRow.appendChild(tdMap[col.id]); });
+            }
+        });
+    }
+
+    function resetLayout() {
+        if (confirm('Deseja restaurar as colunas para as posições originais?')) {
+            localStorage.removeItem(STORAGE_KEY);
+            window.location.href = window.location.pathname + '?reset=' + Date.now();
+        }
+    }
+
+    function updateStickyPositions(table) {
+        const isMobile = window.innerWidth <= 768;
+        const rows = table.querySelectorAll('tr');
+        rows.forEach(row => {
+            let currentLeft = 0;
+            Array.from(row.children).forEach(cell => {
+                if (cell.classList.contains('sticky-col')) {
+                    const colId = cell.dataset.col;
+                    // No mobile, remove a fixação de todas as colunas exceto a Loja
+                    if (isMobile && colId !== 'loja') {
+                        cell.style.position = 'static';
+                        cell.style.left = 'auto';
+                    } else {
+                        cell.style.position = ''; // Retorna ao padrão CSS (sticky)
+                        cell.style.left = `${currentLeft}px`;
+                        // Apenas soma o offset de largura se a célula estiver visível
+                        if (cell.offsetWidth > 0) {
+                            currentLeft += cell.offsetWidth;
+                        }
+                    }
+                }
+            });
+        });
+    }
+
+    function initTableFeatures() {
+        document.querySelectorAll('table').forEach(table => {
+            updateStickyPositions(table);
+
+            table.querySelectorAll('thead th').forEach(th => {
+                if (!th.classList.contains('sticky-col')) {
+                    th.draggable = true;
+                    th.addEventListener('dragstart', e => { e.dataTransfer.setData('sourceId', th.dataset.col); });
+                    th.addEventListener('dragover', e => e.preventDefault());
+                    th.addEventListener('drop', e => {
+                        e.preventDefault();
+                        const sourceId = e.dataTransfer.getData('sourceId');
+                        if (sourceId !== th.dataset.col) {
+                            moveColumnById(table, sourceId, th.dataset.col);
+                            setTimeout(() => saveLayout(table), 100);
+                        }
+                    });
+                }
+
+                const resizer = document.createElement('div');
+                resizer.className = 'resizer';
+                th.appendChild(resizer);
+
+                resizer.addEventListener('mousedown', e => {
+                    e.stopPropagation();
+                    const startX = e.pageX;
+                    const startW = th.offsetWidth;
+
+                    const onMove = ev => {
+                        const w = startW + (ev.pageX - startX);
+                        th.style.width = w + 'px';
+                        updateStickyPositions(table);
+                    };
+
+                    const onUp = () => {
+                        document.removeEventListener('mousemove', onMove);
+                        document.removeEventListener('mouseup', onUp);
+                        setTimeout(() => saveLayout(table), 100);
+                    };
+
+                    document.addEventListener('mousemove', onMove);
+                    document.addEventListener('mouseup', onUp);
+                });
+            });
+        });
+    }
+
+    function moveColumnById(table, sourceId, targetId) {
+        document.querySelectorAll('table').forEach(tbl => {
+            const theadRow = tbl.querySelector('thead tr');
+            const sourceTh = theadRow.querySelector(`th[data-col="${sourceId}"]`);
+            const targetTh = theadRow.querySelector(`th[data-col="${targetId}"]`);
+
+            if (!sourceTh || !targetTh) return;
+
+            const fromIdx = Array.from(theadRow.children).indexOf(sourceTh);
+            const toIdx = Array.from(theadRow.children).indexOf(targetTh);
+
+            tbl.querySelectorAll('tr').forEach(row => {
+                const cells = row.children;
+                if (cells[fromIdx] && cells[toIdx]) {
+                    if (fromIdx < toIdx) row.insertBefore(cells[fromIdx], cells[toIdx].nextSibling);
+                    else row.insertBefore(cells[fromIdx], cells[toIdx]);
+                }
+            });
+
+            updateStickyPositions(tbl);
+        });
+    }
+
+    window.addEventListener('resize', () => {
+        document.querySelectorAll('table').forEach(table => updateStickyPositions(table));
+    });
+
+    window.addEventListener('beforeunload', () => {
+        const table = document.querySelector('table');
+        if (table) saveLayout(table);
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadLayout();
+        initTableFeatures();
+        atualizarRelogios();
+        setInterval(atualizarRelogios, 1000);
+        formatDecimalInputs();
+        initEnterNavigation();
+        document.querySelectorAll('.product-card').forEach(card => recalcular(card.id.replace('card-', '')));
+    });
+</script>
+{% endblock %}
