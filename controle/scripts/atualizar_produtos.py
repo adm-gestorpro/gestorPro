@@ -36,7 +36,9 @@ def atualiza_produtos():
                         caixa = dado['caixa']
                     )
                     produto.save()
+                    print(f'Produto {dado['produtoKey']} cadastrado')
                 else:
+                    atualizados += 1
                     Produto.objects.filter(cod_produto=dado['produtoKey']).update(
                         desc_produto = dado['descricao'],
                         cod_gtin_principal = dado['gtinPrincipal'],
@@ -47,7 +49,7 @@ def atualiza_produtos():
                         desc_marca = dado.get('marca', ''),
                         caixa = dado['caixa']
                     )
-                    atualizados += 1
+                    print(f'Produto {dado['produtoKey']} atualizado')
         else:
             flag = 1
             
