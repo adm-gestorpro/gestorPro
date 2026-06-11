@@ -205,7 +205,7 @@
             <span class="text-xs text-slate-500">Filtros ativos:</span>
             {% if query %}<span class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-2.5 py-1 rounded-md font-medium">Busca: "{{ query }}"</span>{% endif %}
             {% if filtro_status %}<span class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-2.5 py-1 rounded-md font-medium">Status: {{ filtro_status|title }}</span>{% endif %}
-            <a href="?per_page={{ per_page }}" class="text-xs text-blue-600 hover:underline font-medium ml-2">Limpar todos</a>
+            <a href="?per_page={{ per_page }}" onclick="showLoading();" class="text-xs text-blue-600 hover:underline font-medium ml-2">Limpar todos</a>
         </div>
     {% endif %}
 
