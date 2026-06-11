@@ -79,27 +79,28 @@
         .dark #ios-pwa-prompt .ios-steps { color: #94a3b8; }
         #ios-pwa-prompt .close-ios-prompt { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #64748b; cursor: pointer; font-size: 1.1rem; }
         .dark #ios-pwa-prompt .close-ios-prompt { color: #94a3b8; }
+
+        /* ===========================
+        RESPONSIVIDADE MOBILE
+        =========================== */
+        html,body{overflow-x:hidden;width:100%;}
+        #conteudo-principal{width:100%;max-width:100%;overflow-x:auto;}
+        main.main-content{min-width:0;}
+        @media (max-width:768px){
+        #sidebar{width:16rem!important;transform:translateX(-100%);transition:transform .3s ease,width .3s ease;z-index:60;}
+        #sidebar.mobile-open{transform:translateX(0);}
+        #sidebar.collapsed{width:16rem!important;}
+        #sidebar.collapsed .nav-text,#sidebar.collapsed .nav-caret{display:inline!important;}
+        .main-content,.main-content.expanded{margin-left:0!important;width:100%;}
+        header{flex-wrap:wrap;gap:.5rem;padding-left:1rem!important;padding-right:1rem!important;}
+        header nav{width:100%;font-size:.75rem;}
+        .zoom-controls{display:none!important;}
+        #conteudo-principal{padding:1rem!important;}
+        table{display:block;overflow-x:auto;white-space:nowrap;}
+        input,select,textarea,button{max-width:100%;}
     </style>
     
-/* ===========================
-   RESPONSIVIDADE MOBILE
-=========================== */
-html,body{overflow-x:hidden;width:100%;}
-#conteudo-principal{width:100%;max-width:100%;overflow-x:auto;}
-main.main-content{min-width:0;}
-@media (max-width:768px){
-#sidebar{width:16rem!important;transform:translateX(-100%);transition:transform .3s ease,width .3s ease;z-index:60;}
-#sidebar.mobile-open{transform:translateX(0);}
-#sidebar.collapsed{width:16rem!important;}
-#sidebar.collapsed .nav-text,#sidebar.collapsed .nav-caret{display:inline!important;}
-.main-content,.main-content.expanded{margin-left:0!important;width:100%;}
-header{flex-wrap:wrap;gap:.5rem;padding-left:1rem!important;padding-right:1rem!important;}
-header nav{width:100%;font-size:.75rem;}
-.zoom-controls{display:none!important;}
-#conteudo-principal{padding:1rem!important;}
-table{display:block;overflow-x:auto;white-space:nowrap;}
-input,select,textarea,button{max-width:100%;}
-}
+
 
 {% block extra_css %}{% endblock %}
 </head>
