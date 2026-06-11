@@ -114,7 +114,7 @@
     </div>
 
     <div id="estatisticas-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <a href="?status=vencido{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'vencido' %}border-rose-600 ring-2 ring-rose-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+        <a href="?status=vencido{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" onclick="showLoading();" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'vencido' %}border-rose-600 ring-2 ring-rose-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
             <div class="absolute top-0 left-0 w-1 h-full bg-rose-600"></div>
             <div class="flex justify-between items-start">
                 <div>
@@ -131,7 +131,7 @@
             </div>
         </a>
 
-        <a href="?status=critico{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'critico' %}border-red-500 ring-2 ring-red-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+        <a href="?status=critico{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" onclick="showLoading();" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'critico' %}border-red-500 ring-2 ring-red-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
             <div class="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
             <div class="flex justify-between items-start">
                 <div>
@@ -148,7 +148,7 @@
             </div>
         </a>
 
-        <a href="?status=atencao{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'atencao' %}border-orange-500 ring-2 ring-orange-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+        <a href="?status=atencao{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" onclick="showLoading();" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'atencao' %}border-orange-500 ring-2 ring-orange-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
             <div class="absolute top-0 left-0 w-1 h-full bg-orange-500"></div>
             <div class="flex justify-between items-start">
                 <div>
@@ -165,7 +165,7 @@
             </div>
         </a>
 
-        <a href="?status=observacao{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'observacao' %}border-yellow-400 ring-2 ring-yellow-400/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+        <a href="?status=observacao{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" onclick="showLoading();" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'observacao' %}border-yellow-400 ring-2 ring-yellow-400/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
             <div class="absolute top-0 left-0 w-1 h-full bg-yellow-400"></div>
             <div class="flex justify-between items-start">
                 <div>
@@ -182,7 +182,7 @@
             </div>
         </a>
 
-        <a href="?status=seguro{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'seguro' %}border-emerald-500 ring-2 ring-emerald-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+        <a href="?status=seguro{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" onclick="showLoading();" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'seguro' %}border-emerald-500 ring-2 ring-emerald-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
             <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
             <div class="flex justify-between items-start">
                 <div>
