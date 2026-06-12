@@ -3,15 +3,15 @@
 {% load auth_extras %}
 
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR" class="dark overflow-x-hidden">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="GestorPro">
 
-    <link rel="apple-touch-icon" href="{% static 'images/icon-192.png' %}">
+    <link class="apple-touch-icon" href="{% static 'images/icon-192.png' %}">
     <title>{% block title %}GestorPro | Intelligence{% endblock %}</title>
     
     <link rel="manifest" href="{% static 'manifest.json' %}">
@@ -46,14 +46,61 @@
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
         
-        .sidebar-transition { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .sidebar-transition { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .content-transition { transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         
-        /* Larguras ultra-compactas (3.5rem = 56px colapsada) */
-        #sidebar.collapsed { width: 3.5rem; }
-        #sidebar.collapsed .nav-text, #sidebar.collapsed .nav-caret { display: none; }
-        #sidebar.collapsed .submenu { display: none !important; }
-        .main-content.expanded { margin-left: 3.5rem; }
+        /* === AJUSTES DE RESPONSIVIDADE ADAPTADOS === */
+        
+        /* Regras para Dispositivos Móveis (Telas abaixo de 768px) */
+        @media (max-width: 767px) {
+            #sidebar {
+                width: 260px !important;
+                transform: translateX(0);
+                z-index: 50;
+                box-shadow: 4px 0 25px rgba(0, 0, 0, 0.15);
+                height: 100vh !important;
+                height: 100dvh !important;
+            }
+            /* Esconde completamente em mobile quando colapsado */
+            #sidebar.collapsed {
+                width: 260px !important;
+                transform: translateX(-100%);
+            }
+            #sidebar.collapsed .nav-text, #sidebar.collapsed .nav-caret { display: none; }
+            #sidebar.collapsed .submenu { display: none !important; }
+
+            /* Conteúdo principal ocupa largura total sem recuo lateral */
+            .main-content {
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100vw !important;
+            }
+            .main-content.expanded {
+                margin-left: 0 !important;
+                width: 100% !important;
+            }
+        }
+
+        /* Regras para Computadores (Telas a partir de 768px) */
+        @media (min-width: 768px) {
+            #sidebar {
+                transform: translateX(0) !important;
+                width: 10rem !important; /* w-40 original */
+                height: 100vh !important; /* CORREÇÃO: Garante o preenchimento vertical completo no Desktop */
+            }
+            #sidebar.collapsed { 
+                width: 3.5rem !important; 
+            }
+            #sidebar.collapsed .nav-text, #sidebar.collapsed .nav-caret { display: none; }
+            #sidebar.collapsed .submenu { display: none !important; }
+            
+            .main-content {
+                margin-left: 10rem !important;
+            }
+            .main-content.expanded { 
+                margin-left: 3.5rem !important; 
+            }
+        }
 
         #ios-pwa-prompt {
             position: fixed;
@@ -82,19 +129,16 @@
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased selection:bg-primary-500 selection:text-white">
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased selection:bg-primary-500 selection:text-white overflow-x-hidden max-w-full min-h-screen relative">
 
     <div id="tela-bloqueio" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/70 dark:bg-slate-900/80 backdrop-blur-sm transition-opacity duration-500 cursor-wait">
-    
         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 dark:border-blue-400 mb-4"></div>
-        
         <span class="text-sm font-semibold text-slate-700 dark:text-slate-300 animate-pulse">
             Carregando informações...
         </span>
-        
     </div>
 
-    <aside id="sidebar" class="sidebar-transition fixed top-0 left-0 z-40 w-40 h-screen bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col overflow-y-auto overflow-x-hidden collapsed">
+    <aside id="sidebar" class="sidebar-transition fixed top-0 left-0 h-screen z-40 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col overflow-y-auto overflow-x-hidden collapsed">
         <div class="flex items-center justify-between h-[70px] px-3 shrink-0">
             <span class="font-extrabold text-sm tracking-tight brand-logo nav-text">Gestor<span class="text-primary-500">Pro</span></span>
             <button id="toggleSidebar" class="text-slate-500 hover:text-primary-500 focus:outline-none">
@@ -121,7 +165,6 @@
                 <li><a href="{% url 'listar_produtos' %}" onclick="showLoading();" class="flex items-center p-2 pl-9 w-full text-xs rounded-lg text-slate-600 hover:text-primary-500 dark:text-slate-400 dark:hover:text-primary-400">Listar</a></li>
                 <li><a href="{% url 'controle_validade' %}" onclick="showLoading();" class="flex items-center p-2 pl-9 w-full text-xs rounded-lg text-slate-600 hover:text-primary-500 dark:text-slate-400 dark:hover:text-primary-400">Controle de Validade</a></li>
             </ul>
-            
 
             <button type="button" class="flex items-center w-full p-2 rounded-lg text-slate-700 hover:bg-primary-50 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-primary-400 group" aria-controls="menuFornecedores" data-collapse-toggle="menuFornecedores">
                 <i class="fa-solid fa-address-card w-6 text-center text-base"></i>
@@ -218,16 +261,22 @@
         </div>
     </div>
 
-    <main class="main-content content-transition ml-40 min-h-screen flex flex-col expanded">
-        <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex justify-between items-center">
-            <nav class="flex text-sm text-slate-500 dark:text-slate-400 font-medium">
-                <ol class="inline-flex items-center space-x-1 md:space-x-2">
-                    <li class="inline-flex items-center">GestorPro</li>
-                    <li><span class="mx-2">/</span></li>
-                    <li class="text-slate-900 dark:text-white font-bold">{% block page_name %}Dashboard{% endblock %}</li>
-                </ol>
-            </nav>
-            <div class="zoom-controls flex gap-1">
+    <main class="main-content content-transition min-h-screen flex flex-col expanded overflow-x-hidden max-w-full">
+        <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 md:px-6 py-3 md:py-4 flex justify-between items-center gap-2">
+            <div class="flex items-center">
+                <button id="openMobileSidebar" class="md:hidden mr-3 text-slate-500 hover:text-primary-500 focus:outline-none" title="Abrir menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                <nav class="flex text-xs md:text-sm text-slate-500 dark:text-slate-400 font-medium">
+                    <ol class="inline-flex items-center space-x-1">
+                        <li class="inline-flex items-center">GestorPro</li>
+                        <li><span class="mx-1 md:mx-2">/</span></li>
+                        <li class="text-slate-900 dark:text-white font-bold truncate max-w-[100px] xs:max-w-none">{% block page_name %}Dashboard{% endblock %}</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="zoom-controls hidden sm:flex gap-1">
                 <button onclick="alterarZoom(-0.05)" 
                     class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                     title="Diminuir zoom">
@@ -244,14 +293,15 @@
                     <i class="fa-solid fa-magnifying-glass-plus"></i>
                 </button>
             </div>
-            <div class="flex items-center gap-1">
+            
+            <div class="flex items-center gap-1 shrink-0">
                 {% if request.user.is_authenticated %}
-                <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
-                    <svg class="h-4 w-4 text-slate-500 dark:text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <div class="flex items-center gap-1.5 px-2 md:px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+                    <svg class="h-3.5 w-3.5 text-slate-500 dark:text-slate-400 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
-                    <span class="text-xs font-medium text-slate-600 dark:text-slate-300">
-                        Sessão expira em: <span id="cronometro-sessao" class="font-mono font-bold text-slate-900 dark:text-white"></span>
+                    <span class="text-[10px] md:text-xs font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                        <span class="hidden sm:inline">Sessão expira em: </span><span id="cronometro-sessao" class="font-mono font-bold text-slate-900 dark:text-white"></span>
                     </span>
                 </div>
                 {% endif %}
@@ -268,7 +318,7 @@
             </div>
         </header>
 
-        <div class="p-6 flex-1" id="conteudo-principal">
+        <div class="p-4 md:p-6 flex-1 max-w-full" id="conteudo-principal">
             {% block content %}{% endblock %}
         </div>
     </main>
@@ -286,22 +336,18 @@
     {% if request.user.is_authenticated %}
     <div id="modal-inactivity" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
         <div class="max-w-md w-full bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 p-6 text-center animate-fade-in">
-            
             <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-500 dark:text-amber-400 mb-4 animate-pulse">
                 <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                 </svg>
             </div>
-
             <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
                 Sua sessão está prestes a expirar!
             </h3>
-            
             <p class="text-sm text-slate-600 dark:text-slate-300 mb-6">
                 Você está inativo há algum tempo. Por segurança, o GestorPro irá desconectar sua conta em 
                 <span id="cronometro-modal" class="font-mono font-extrabold text-red-500 dark:text-red-400 text-base">60</span> segundos.
             </p>
-
             <div class="flex flex-col sm:flex-row gap-3 justify-center">
                 <a href="{% url 'logout_view' %}" 
                 class="inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors">
@@ -329,15 +375,13 @@
             overlay.classList.remove('hidden');
             overlay.classList.add('flex');
         }
-        // Configurações de tempo (em segundos)
-        const MAX_TEMPO_SEGUNDOS = 30 * 60; // 30 minutos de sessão total
-        const TEMPO_AVISO_MODAL = 60;        // Abrir modal faltando 60 segundos
+        const MAX_TEMPO_SEGUNDOS = 30 * 60;
+        const TEMPO_AVISO_MODAL = 60;
         
         let tempoRestante = MAX_TEMPO_SEGUNDOS;
         let intervaloContagem;
         let modalAberto = false;
 
-        // Seletores dos elementos HTML
         const elementoTimerNavbar = document.getElementById('cronometro-sessao');
         const elementoTimerModal = document.getElementById('cronometro-modal');
         const modalInatividade = document.getElementById('modal-inactivity');
@@ -350,7 +394,6 @@
         }
 
         function atualizarInterface() {
-            // Atualiza o reloginho discreto da Navbar se ele existir
             if (elementoTimerNavbar) {
                 elementoTimerNavbar.innerText = formatarTempo(tempoRestante);
                 if (tempoRestante <= TEMPO_AVISO_MODAL) {
@@ -359,8 +402,6 @@
                     elementoTimerNavbar.classList.remove('text-red-500', 'dark:text-red-400');
                 }
             }
-
-            // Atualiza o contador gigante dentro do Modal
             if (elementoTimerModal && modalAberto) {
                 elementoTimerModal.innerText = tempoRestante;
             }
@@ -370,13 +411,11 @@
             tempoRestante--;
             atualizarInterface();
 
-            // Dispara o Modal quando atinge o tempo limite de aviso
             if (tempoRestante <= TEMPO_AVISO_MODAL && !modalAberto) {
                 modalAberto = true;
                 if (modalInatividade) modalInatividade.classList.remove('hidden');
             }
 
-            // Tempo esgotado: manda para o logout
             if (tempoRestante <= 0) {
                 clearInterval(intervaloContagem);
                 window.location.href = "{% url 'logout_view' %}";
@@ -384,22 +423,14 @@
         }
 
         function resetarTemporizador() {
-            // Se o modal estiver aberto, o usuário parou de interagir de verdade. 
-            // Movimentos acidentais de mouse não devem fechar o modal.
             if (modalAberto) return;
-
             tempoRestante = MAX_TEMPO_SEGUNDOS;
             atualizarInterface();
-            
             clearInterval(intervaloContagem);
             intervaloContagem = setInterval(contarSegundo, 1000);
         }
 
-        // Função crucial: Diz para o Django que o usuário está ativo sem atualizar a página
         function renovarSessaoNoBackend() {
-            // Faz uma requisição fictícia em segundo plano para a própria página atual.
-            // Como 'SESSION_SAVE_EVERY_REQUEST = True' está ativo no seu settings.py,
-            // qualquer requisição (mesmo via Fetch/AJAX) renova a sessão no banco do Django.
             fetch(window.location.href)
                 .then(() => {
                     modalAberto = false;
@@ -409,18 +440,14 @@
                 .catch(err => console.error("Erro ao renovar sessão:", err));
         }
 
-        // Ativa os ouvintes de eventos se o usuário estiver logado
         {% if request.user.is_authenticated %}
             document.addEventListener('DOMContentLoaded', () => {
                 resetarTemporizador();
-                
-                // Configura o clique do botão do modal
                 if (btnManterConectado) {
                     btnManterConectado.addEventListener('click', renovarSessaoNoBackend);
                 }
             });
 
-            // Eventos normais do usuário mexendo no sistema
             window.addEventListener('mousemove', resetarTemporizador);
             window.addEventListener('mousedown', resetarTemporizador);
             window.addEventListener('touchstart', resetarTemporizador);
@@ -434,15 +461,12 @@
 
         function alterarZoom(delta) {
             currentZoom += delta;
-            
-            // Limites para não deixar a página invisível ou gigante demais
             if (currentZoom < 0.5) currentZoom = 0.5;
             if (currentZoom > 2) currentZoom = 2;
 
-            // Aplica ao elemento principal que envolve o conteúdo (geralmente o body ou uma div container)
             document.getElementById('conteudo-principal').style.transform = `scale(${currentZoom})`;
-            document.getElementById('conteudo-principal').style.transformOrigin = "0 0"; // Mantém o zoom no canto superior esquerdo
-            document.getElementById('conteudo-principal').style.width = `${100 / currentZoom}%`; // Ajusta a largura para compensar a escala
+            document.getElementById('conteudo-principal').style.transformOrigin = "0 0";
+            document.getElementById('conteudo-principal').style.width = `${100 / currentZoom}%`;
         }
 
         function resetarZoom() {
@@ -457,6 +481,7 @@
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.querySelector('.main-content');
             const btnToggleSidebar = document.getElementById('toggleSidebar');
+            const btnOpenMobileSidebar = document.getElementById('openMobileSidebar');
 
             const toggleSidebarState = (forceExpand = false) => {
                 if (forceExpand) {
@@ -479,6 +504,10 @@
             }
 
             btnToggleSidebar.addEventListener('click', () => toggleSidebarState());
+            
+            if (btnOpenMobileSidebar) {
+                btnOpenMobileSidebar.addEventListener('click', () => toggleSidebarState());
+            }
 
             document.querySelectorAll('[data-collapse-toggle]').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -488,7 +517,7 @@
 
             document.querySelectorAll('#sidebar a').forEach(link => {
                 link.addEventListener('click', () => {
-                    if (!sidebar.classList.contains('collapsed')) {
+                    if (window.innerWidth < 768) {
                         sidebar.classList.add('collapsed');
                         mainContent.classList.add('expanded');
                         localStorage.setItem('gestorpro_sidebar', 'true');
@@ -511,7 +540,6 @@
                 updateIcon();
             });
 
-            // Registro PWA Service Worker
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/sw.js') 
                 .then((reg) => {
@@ -534,29 +562,23 @@
         });
     </script>
     <script>
-        // O evento 'load' só dispara quando TODO o HTML, imagens e scripts terminam de baixar
         window.addEventListener('load', function () {
             const telaBloqueio = document.getElementById('tela-bloqueio');
-            
             if (telaBloqueio) {
-                // 1. Inicia o efeito visual de sumir suavemente (fade out)
                 telaBloqueio.classList.add('opacity-0');
-                
-                // 2. Remove o elemento da tela após a animação (500ms) para liberar os cliques
                 setTimeout(() => {
                     telaBloqueio.style.display = 'none';
                 }, 500);
             }
         });
 
-        // Desbloqueia a tela forçadamente após 5 segundos, mesmo se der erro no carregamento
         setTimeout(() => {
             const telaBloqueio = document.getElementById('tela-bloqueio');
             if (telaBloqueio && telaBloqueio.style.display !== 'none') {
                 telaBloqueio.classList.add('opacity-0');
                 setTimeout(() => telaBloqueio.style.display = 'none', 500);
             }
-        }, 10000); // 5000 milissegundos = 5 segundos
+        }, 10000);
     </script>
 {% block extra_js %}{% endblock %}
 </body>
