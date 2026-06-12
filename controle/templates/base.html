@@ -130,6 +130,24 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased selection:bg-primary-500 selection:text-white overflow-x-hidden max-w-full min-h-screen relative">
+    
+    {% if messages %}
+        <div class="mb-4 space-y-2 max-w-7xl mx-auto">
+            {% for message in messages %}
+                <div class="flex items-center p-4 rounded-lg border text-sm transition-all duration-300
+                    {% if message.tags == 'success' %}
+                        bg-green-50 border-green-200 text-green-800 dark:bg-green-950/30 dark:border-green-900/50 dark:text-green-400
+                    {% elif message.tags == 'error' %}
+                        bg-red-50 border-red-200 text-red-800 dark:bg-red-950/30 dark:border-red-900/50 dark:text-red-400
+                    {% else %}
+                        bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/30 dark:border-blue-900/50 dark:text-blue-400
+                    {% endif %}">
+                    <i class="fa-solid {% if message.tags == 'success' %}fa-circle-check{% else %}fa-circle-exclamation{% endif %} mr-2.5 text-base flex-shrink-0"></i>
+                    <div class="font-medium">{{ message }}</div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
 
     <div id="tela-bloqueio" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/70 dark:bg-slate-900/80 backdrop-blur-sm transition-opacity duration-500 cursor-wait">
         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 dark:border-blue-400 mb-4"></div>
@@ -244,12 +262,12 @@
         </div>
         <ul class="py-2 text-sm text-slate-700 dark:text-slate-200">
             <li>
-                <a href="#" class="flex items-center px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 dark:hover:text-white transition-colors">
+                <a href="{% url 'perfil_usuario' %}" class="flex items-center px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 dark:hover:text-white transition-colors">
                     <i class="fa-solid fa-user w-4 mr-2 text-slate-400"></i> Meu Perfil
                 </a>
             </li>
             <li>
-                <a href="#" class="flex items-center px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 dark:hover:text-white transition-colors">
+                <a href="{% url 'configuracoes_usuario' %}" class="flex items-center px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 dark:hover:text-white transition-colors">
                     <i class="fa-solid fa-gear w-4 mr-2 text-slate-400"></i> Configurações
                 </a>
             </li>

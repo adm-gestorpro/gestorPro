@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Configurações Gerais | GestorPro{% endblock %}
+{% block page_name %}Configurações{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Sistema & Integrações</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Gerencie chaves de API, webhooks e parâmetros globais do GestorPro.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col">
+            <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+                    <i class="fa-solid fa-key mr-2 text-primary-500"></i> Tokens de Acesso API
+                </h3>
+                <button type="button" class="text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg px-3 py-1.5 transition-colors">
+                    <i class="fa-solid fa-plus mr-1"></i> Gerar Token
+                </button>
+            </div>
+            <div class="p-5 flex-1 overflow-x-auto">
+                <table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+                    <thead class="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-900 dark:text-slate-300 rounded-t-lg">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 rounded-tl-lg">Nome do Token</th>
+                            <th scope="col" class="px-4 py-3">Criado em</th>
+                            <th scope="col" class="px-4 py-3">Status</th>
+                            <th scope="col" class="px-4 py-3 text-right rounded-tr-lg">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-slate-100 dark:border-slate-700">
+                            <td class="px-4 py-3 font-medium text-slate-900 dark:text-white">Ponto de Venda (PDV_01)</td>
+                            <td class="px-4 py-3">12 Jun 2026</td>
+                            <td class="px-4 py-3">
+                                <span class="bg-green-100 text-green-800 text-[10px] font-medium px-2 py-0.5 rounded dark:bg-green-900 dark:text-green-300">Ativo</span>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <button class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" title="Revogar">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3 font-medium text-slate-900 dark:text-white">Integração App Mobile</td>
+                            <td class="px-4 py-3">05 Mar 2026</td>
+                            <td class="px-4 py-3">
+                                <span class="bg-green-100 text-green-800 text-[10px] font-medium px-2 py-0.5 rounded dark:bg-green-900 dark:text-green-300">Ativo</span>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <button class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" title="Revogar">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+            <div class="p-5 border-b border-slate-100 dark:border-slate-700">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+                    <i class="fa-solid fa-server mr-2 text-primary-500"></i> Integração Bluesoft ERP
+                </h3>
+            </div>
+            <div class="p-5">
+                <form action="#" method="POST" class="space-y-4">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-slate-900 dark:text-white">URL Base da API</label>
+                        <input type="url" name="erp_api_url" value="https://api.bluesoft.com.br" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-900 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white" placeholder="Ex: https://api.exemplo.com.br">
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-slate-900 dark:text-white">Tenant ID / Cnpj Base</label>
+                        <input type="text" name="erp_tenant" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-900 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-slate-900 dark:text-white">Token de Autorização (Bearer)</label>
+                        <div class="relative">
+                            <input type="password" id="erp_token" name="erp_token" value="*************************" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-900 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white">
+                            <button type="button" onclick="const p=document.getElementById('erp_token'); p.type=p.type==='password'?'text':'password';" class="absolute inset-y-0 right-0 px-3 flex items-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 pt-3">
+                        <button type="submit" class="text-white bg-primary-600 hover:bg-primary-700 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 transition-colors">
+                            Salvar Configurações
+                        </button>
+                        <button type="button" class="text-slate-700 bg-white border border-slate-300 focus:ring-4 focus:outline-none focus:ring-slate-100 font-medium rounded-lg text-sm px-5 py-2.5 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-700 transition-colors">
+                            <i class="fa-solid fa-plug-circle-bolt mr-1"></i> Testar Conexão
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 lg:col-span-2">
+            <div class="p-5 border-b border-slate-100 dark:border-slate-700">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+                    <i class="fa-solid fa-boxes-stacked mr-2 text-primary-500"></i> Regras de Negócio e Precificação
+                </h3>
+            </div>
+            <div class="p-5">
+                <form action="#" method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-slate-900 dark:text-white">Cálculo de Preço Padrão</label>
+                        <select name="logica_preco" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-900 dark:border-slate-600 dark:text-white">
+                            <option value="margem" selected>Margem de Lucro Bruto (%)</option>
+                            <option value="markup">Markup Multiplicador</option>
+                            <option value="adicao">Soma Simples</option>
+                        </select>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Regra base para telas de compras.</p>
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-slate-900 dark:text-white">Padrão de Código de Barras</label>
+                        <select name="padrao_barras" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-900 dark:border-slate-600 dark:text-white">
+                            <option value="ean13" selected>EAN-13 (Preenchimento Automático)</option>
+                            <option value="dun14">DUN-14 / ITF-14</option>
+                            <option value="code128">Code 128</option>
+                        </select>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Geração de EAN-13 para códigos curtos ativa.</p>
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="w-full text-white bg-slate-800 hover:bg-slate-900 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors">
+                            Atualizar Parâmetros Globais
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
