@@ -241,7 +241,7 @@
                 <tbody id="tabela-validades" class="block md:table-row-group p-4 md:p-0 space-y-4 md:space-y-0 md:divide-y divide-slate-200 dark:divide-slate-700">
                     {% for item in page_obj %}
                     <tr class="product-row flex flex-col md:table-row border border-slate-200 dark:border-slate-700 md:border-none rounded-xl md:rounded-none overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50 md:divide-y-0 hover:bg-white md:hover:bg-slate-50/50 dark:hover:bg-slate-750/30 transition-colors bg-white dark:bg-slate-800 shadow-sm md:shadow-none"
-                        data-search="{{ item.nome|escape }} {{ item.codigo_interno|escape }} {{ item.codigo_barras|escape }} {{ item.lote|escape }} loja {{ item.loja|escape }} {% if item.promocao_ativa %}promocao ativa{% endif %}">
+                        data-search="{{ item.nome|escape }} {{ item.codigo_interno|escape }} {{ item.codigo_barras|escape }} {{ item.lote|escape }} {{ item.lancado_por|escape }} loja {{ item.loja|escape }} {% if item.promocao_ativa %}promocao ativa{% endif %}">
                         
                         <td class="block md:table-cell px-4 md:px-6 py-3 md:py-4 bg-slate-50/50 dark:bg-slate-800/80 md:bg-transparent">
                             <div class="flex flex-col">
@@ -354,9 +354,9 @@
                 <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                     <label for="per-page-select" class="whitespace-nowrap">Ver:</label>
                     <select id="per-page-select" onchange="alterarItensPorPagina(this.value);" class="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg p-1.5 text-xs focus:ring-blue-500 focus:border-blue-500 shadow-sm">
-                        <option value="10" {% if per_page == 10 %}selected{% endif %}>10 por pág.</option>
-                        <option value="20" {% if per_page == 20 %}selected{% endif %}>20 por pág.</option>
                         <option value="50" {% if per_page == 50 %}selected{% endif %}>50 por pág.</option>
+                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100 por pág.</option>
+                        <option value="200" {% if per_page == 200 %}selected{% endif %}>200 por pág.</option>
                     </select>
                 </div>
             </div>
