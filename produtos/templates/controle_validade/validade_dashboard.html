@@ -301,6 +301,11 @@
                             <div class="flex md:justify-end gap-2 w-full">
                                 
                                 {% if request.user|has_any_group:"Administrador,Gerente de Loja,Gerente Distrital" %}
+                                <button title="Ativar promoção"
+                                class="flex-1 md:flex-none flex justify-center items-center text-slate-500 hover:text-green-600 transition-colors py-2.5 md:py-2 px-4 md:px-3 border border-slate-200 dark:border-slate-600 md:border-transparent rounded-lg md:rounded-md bg-white dark:bg-slate-900 md:bg-transparent shadow-sm md:shadow-none">
+                                    <i class="fa-solid fa-tag text-base"></i> <span class="md:hidden text-xs ml-2 font-semibold">Promoção</span>
+                                </button>
+
                                 <button title="Editar Lote" 
                                     data-id="{{ item.id }}"
                                     data-nome="{{ item.codigo_interno }} - {{ item.nome }}"
