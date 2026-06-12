@@ -262,12 +262,12 @@
         </div>
         <ul class="py-2 text-sm text-slate-700 dark:text-slate-200">
             <li>
-                <a href="{% url 'perfil_usuario' %}" class="flex items-center px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 dark:hover:text-white transition-colors">
+                <a href="{% url 'perfil_usuario' %}" class="sidebar-reset-link flex items-center px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 dark:hover:text-white transition-colors">
                     <i class="fa-solid fa-user w-4 mr-2 text-slate-400"></i> Meu Perfil
                 </a>
             </li>
             <li>
-                <a href="{% url 'configuracoes_usuario' %}" class="flex items-center px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 dark:hover:text-white transition-colors">
+                <a href="{% url 'configuracoes_usuario' %}" class="sidebar-reset-link flex items-center px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 dark:hover:text-white transition-colors">
                     <i class="fa-solid fa-gear w-4 mr-2 text-slate-400"></i> Configurações
                 </a>
             </li>
@@ -388,6 +388,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
 
     <script>
+        const perfilLink = document.querySelector('a[href*="perfil"]');
+        const configLink = document.querySelector('a[href*="configuracoes"]');
+
+        [perfilLink, configLink].forEach(link => {
+            if (link) {
+                link.addEventListener('click', () => {
+                    localStorage.setItem('gestorpro_sidebar', 'true');
+                });
+            }
+        });
+
         function showLoading() {
             const overlay = document.getElementById('loading-overlay');
             overlay.classList.remove('hidden');
@@ -529,17 +540,21 @@
 
             document.querySelectorAll('[data-collapse-toggle]').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    if (sidebar.classList.contains('collapsed')) toggleSidebarState(true);
+                    if (sidebar.classList.contains('collapsed')) {
+                        sidebar.classList.remove('collapsed');
+                        mainContent.classList.remove('expanded');
+                    }
                 });
             });
-
             document.querySelectorAll('#sidebar a').forEach(link => {
                 link.addEventListener('click', () => {
-                    if (window.innerWidth < 768) {
-                        sidebar.classList.add('collapsed');
-                        mainContent.classList.add('expanded');
-                        localStorage.setItem('gestorpro_sidebar', 'true');
-                    }
+
+                    // Sempre salva a sidebar como colapsada
+                    localStorage.setItem('gestorpro_sidebar', 'true');
+
+                    // Aplica imediatamente o estado colapsado
+                    sidebar.classList.add('collapsed');
+                    mainContent.classList.add('expanded');
                 });
             });
 
