@@ -34,7 +34,7 @@ def checa_multiplos_grupos_403(nomes_grupos):
 def listar_produtos(request):
     produtos_list = Produto.objects.all().order_by('cod_produto')
 
-    per_page = request.GET.get('per_page', 10)
+    per_page = request.GET.get('per_page', 50)
     paginator = Paginator(produtos_list, per_page)
 
     page_number = request.GET.get('page')
@@ -58,9 +58,9 @@ def controle_validade(request):
     # 1. Parâmetros da requisição
     filtro_status = request.GET.get('status', '').strip().lower()
     query = request.GET.get('q', '').strip()
-    per_page = request.GET.get('per_page', '10')
-    if per_page not in ['10', '20', '50']: 
-        per_page = '10'
+    per_page = request.GET.get('per_page', '50')
+    if per_page not in ['50', '100', '200']: 
+        per_page = '50'
 
     hoje = date.today()
 
