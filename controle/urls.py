@@ -19,6 +19,8 @@ urlpatterns = [
     path('atualizar_pedido_balcao', views.atualizar_pedido_balcao, name='atualizar_pedido_balcao'),
     path('dashboard', views.dashboard, name='dashboard'),
     path('agenda', views.agenda, name='agenda'),
+    path('usuario/perfil', views.perfil_usuario, name='perfil_usuario'),
+    path('usuario/configuracoes', views.configuracoes_usuario, name='configuracoes_usuario'),
 
     path('sw.js', serve, {'path': 'js/sw.js'}),
 ]

@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Meu Perfil | GestorPro{% endblock %}
+{% block page_name %}Meu Perfil{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+    
+    <div class="lg:col-span-1">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden sticky top-6">
+            <div class="h-20 bg-gradient-to-r from-primary-500 to-primary-600 dark:from-slate-700 dark:to-slate-900 opacity-90"></div>
+            
+            <div class="px-6 pb-6 text-center -mt-10">
+                <div class="relative inline-block mb-3">
+                    <img src="https://ui-avatars.com/api/?name={{ request.user.first_name|default:request.user.username }}&background=3b82f6&color=fff&size=120" 
+                         class="rounded-full w-24 h-24 mx-auto border-4 border-white dark:border-slate-800 shadow-md object-cover" alt="Foto de Perfil">
+                    <button class="absolute bottom-0 right-0 bg-primary-500 hover:bg-primary-600 text-white rounded-full w-8 h-8 flex items-center justify-center border-2 border-white dark:border-slate-800 transition-all duration-200 shadow-sm" title="Alterar foto">
+                        <i class="fa-solid fa-camera text-xs"></i>
+                    </button>
+                </div>
+                
+                <h2 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                    {{ request.user.get_full_name|default:request.user.username }}
+                </h2>
+                
+                <div class="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-400 border border-primary-100/50 dark:border-primary-900/30">
+                    <i class="fa-solid fa-briefcase text-[10px]"></i>
+                    {% if request.user.groups.all %}
+                        {{ request.user.groups.all.0.name }}
+                    {% else %}
+                        Sem perfil cadastrado
+                    {% endif %}
+                </div>
+                
+                <div class="mt-6 border-t border-slate-100 dark:border-slate-700 pt-5 text-left space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400">
+                            <i class="fa-solid fa-envelope text-sm"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <span class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">E-mail Corporativo</span>
+                            <span class="text-sm text-slate-700 dark:text-slate-200 block truncate font-medium">{{ request.user.email|default:"usuario@gestorpro.com.br" }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400">
+                            <i class="fa-solid fa-clock-rotate-left text-sm"></i>
+                        </div>
+                        <div class="flex-1">
+                            <span class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">Último Acesso</span>
+                            <span class="text-sm text-slate-700 dark:text-slate-200 block font-medium">{{ request.user.last_login|date:"d/m/Y H:i"|default:"Primeiro acesso hoje" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="lg:col-span-2 space-y-6">
+        
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+            <div class="flex items-center gap-3 mb-5 border-b border-slate-100 dark:border-slate-700 pb-4">
+                <div class="p-2 bg-primary-50 dark:bg-primary-950/30 rounded-lg text-primary-500">
+                    <i class="fa-solid fa-user-gear text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Informações Pessoais</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Mantenha seus dados cadastrais atualizados no sistema.</p>
+                </div>
+            </div>
+            
+            <form action="#" method="POST" class="space-y-4">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="first_name" class="block mb-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">Nome</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                                <i class="fa-regular fa-user text-xs"></i>
+                            </div>
+                            <input type="text" id="first_name" name="first_name" value="{{ request.user.first_name }}" 
+                                   class="pl-9 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-900 dark:border-slate-600 dark:text-white transition-all duration-200">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="last_name" class="block mb-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">Sobrenome</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                                <i class="fa-regular fa-user text-xs"></i>
+                            </div>
+                            <input type="text" id="last_name" name="last_name" value="{{ request.user.last_name }}" 
+                                   class="pl-9 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-900 dark:border-slate-600 dark:text-white transition-all duration-200">
+                        </div>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label for="email" class="block mb-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">Endereço de e-mail</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                                <i class="fa-regular fa-envelope text-xs"></i>
+                            </div>
+                            <input type="email" id="email" name="email" value="{{ request.user.email }}" 
+                                   class="pl-9 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-900 dark:border-slate-600 dark:text-white transition-all duration-200">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end pt-3 border-t border-slate-100 dark:border-slate-700 mt-5">
+                    <button type="submit" onclick="showLoading();" name="btn_atualizar_perfil"
+                            class="flex items-center gap-2 text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800 transition-all duration-200 shadow-sm">
+                        <i class="fa-solid fa-floppy-disk text-xs"></i> Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+            <div class="flex items-center gap-3 mb-5 border-b border-slate-100 dark:border-slate-700 pb-4">
+                <div class="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300">
+                    <i class="fa-solid fa-shield-halved text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Segurança da Conta</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Gerencie suas credenciais de acesso e senhas.</p>
+                </div>
+            </div>
+            
+            <form action="#" method="POST" class="space-y-5">
+                {% csrf_token %}
+                
+                <div class="p-4 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-700/60">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="user" class="block mb-1.5 text-sm font-medium text-slate-600 dark:text-slate-400">Usuário do Sistema</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-at text-xs"></i>
+                                </div>
+                                <input type="text" id="user" name="user" value="{{ request.user.username }}" 
+                                       class="pl-9 bg-slate-100 border border-slate-200 text-slate-500 text-sm rounded-lg block w-full p-2.5 cursor-not-allowed dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400 font-mono" disabled>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="current_password" class="block mb-1.5 text-sm font-medium text-slate-900 dark:text-white">Senha Atual</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-lock-open text-xs"></i>
+                                </div>
+                                <input type="password" id="current_password" name="current_password" required 
+                                       class="pl-9 bg-white border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-900 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white transition-all duration-200" placeholder="••••••••">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="new_password" class="block mb-1.5 text-sm font-medium text-slate-900 dark:text-white">Nova Senha</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-lock text-xs"></i>
+                            </div>
+                            <input type="password" id="new_password" name="new_password" required 
+                                   class="pl-9 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-900 dark:border-slate-600 dark:text-white transition-all duration-200" placeholder="Mínimo 8 caracteres">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="confirm_password" class="block mb-1.5 text-sm font-medium text-slate-900 dark:text-white">Confirmar Nova Senha</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-check-double text-xs"></i>
+                            </div>
+                            <input type="password" id="confirm_password" name="confirm_password" required 
+                                   class="pl-9 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-900 dark:border-slate-600 dark:text-white transition-all duration-200" placeholder="Repita a nova senha">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-2.5 text-xs text-blue-700 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-300 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                    <i class="fa-solid fa-circle-info text-blue-500 mt-0.5 text-sm flex-shrink-0"></i>
+                    <p class="leading-relaxed">A senha precisa ter 8 dígitos, sendo letras e números e não pode conter as palvras que estão em seu usuário.</p>
+                </div>
+
+                <div class="flex items-start gap-2.5 text-xs text-blue-700 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-300 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                    <i class="fa-solid fa-circle-info text-blue-500 mt-0.5 text-sm flex-shrink-0"></i>
+                    <p class="leading-relaxed">Para uma senha forte, certifique-se de usar letras maiúsculas e minúsculas, números e caracteres especiais (ex: @, #, $).</p>
+                </div>
+
+                <div class="flex justify-end pt-3 border-t border-slate-100 dark:border-slate-700 mt-5">
+                    <button type="submit" onclick="showLoading();" name="btn_atualizar_senha"
+                            class="flex items-center gap-2 text-white bg-slate-800 hover:bg-slate-900 focus:ring-4 focus:outline-none focus:ring-slate-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-slate-700 dark:hover:bg-slate-600 dark:focus:ring-slate-800 transition-all duration-200 shadow-sm">
+                        <i class="fa-solid fa-key text-xs"></i> Atualizar Senha
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

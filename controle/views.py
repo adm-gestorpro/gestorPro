@@ -4,6 +4,7 @@ import threading
 from datetime import datetime, timedelta
 
 from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -78,6 +79,51 @@ def logout_user(request):
     response.delete_cookie('csrftoken')
     return response
 
+@login_required
+def perfil_usuario(request):
+    user = request.user
+
+    if request.method == 'POST':
+        if 'btn_atualizar_perfil' in request.POST:
+            first_name = request.POST.get('first_name', '').strip()
+            last_name = request.POST.get('last_name', '').strip()
+            email = request.POST.get('email', '').strip()
+            if not email:
+                messages.error(request, "O campo de e-mail não pode ficar vazio.")
+            else:
+                user.first_name = first_name
+                user.last_name = last_name
+                user.email = email
+                user.save()
+                messages.success(request, "Suas informações pessoais foram atualizadas com sucesso!")
+                return redirect(perfil_usuario)
+
+        elif 'btn_atualizar_senha' in request.POST:
+            senha_atual = request.POST.get('current_password')
+            nova_senha = request.POST.get('new_password')
+            confirmar_senha = request.POST.get('confirm_password')
+
+            if not user.check_password(senha_atual):
+                messages.error(request, "A senha atual informada está incorreta.")
+            
+            elif nova_senha != confirmar_senha:
+                messages.error(request, "A nova senha e a confirmação não coincidem.")
+            
+            elif len(nova_senha) < 8:
+                messages.error(request, "A nova senha deve conter no mínimo 8 caracteres.")
+            
+            else:
+                user.set_password(nova_senha)
+                user.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, "Sua senha foi alterada com sucesso!")
+                return redirect(perfil_usuario)
+
+    return render(request, 'usuários/perfil.html')
+
+@login_required
+def configuracoes_usuario(request):
+    return render(request, 'usuários/configuracoes.html')
 
 @login_required
 def logout_view(request):
