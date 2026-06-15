@@ -37,7 +37,7 @@ class UserAdmin(BaseUserAdmin):
         perfil = PerfilUsuario.objects.filter(user=obj).first()
         if perfil and perfil.vendedor.exists():
             return ", ".join([str(item.cod_vendedor) for item in perfil.vendedor.all()])
-        return "Sem Perfil cadastrado" if not perfil else "Sem Vendedor(es) cadastrada(s)"
+        return "Sem Perfil cadastrado" if not perfil else "Sem Vendedor(es) cadastrado(s)"
 
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
