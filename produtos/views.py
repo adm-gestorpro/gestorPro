@@ -57,6 +57,7 @@ def controle_validade(request):
 
     # 1. Parâmetros da requisição
     filtro_status = request.GET.get('status', '').strip().lower()
+    filtro_loja = request.GET.get('loja', '').strip()  # <-- ADICIONADO: Captura o código da loja filtrada
     query = request.GET.get('q', '').strip()
     per_page = request.GET.get('per_page', '50')
     if per_page not in ['50', '100', '200']: 
@@ -69,6 +70,10 @@ def controle_validade(request):
         ativo=True, 
         cod_loja__in=lojas_permitidas
     ).select_related('id_produto', 'cod_loja')
+
+    # <-- ADICIONADO: Filtra pela loja selecionada se o parâmetro existir
+    if filtro_loja:
+        validades_qs = validades_qs.filter(cod_loja__cod_loja=filtro_loja)
 
     # 3. Processamento de Datas e Estilos direto no PostgreSQL (Supabase)
     validades_qs = validades_qs.annotate(
@@ -159,11 +164,12 @@ def controle_validade(request):
 
     # 9. Consultas auxiliares otimizadas para o Modal
     produtos_query = Produto.objects.filter(caixa=False).only('cod_produto', 'desc_produto', 'cod_gtin_principal')
-    lojas = Loja.objects.filter(cod_loja__in=lojas_permitidas)
+    lojas = Loja.objects.filter(cod_loja__in=lojas_permitidas).order_by('cod_loja')
 
     context = {
         'page_obj': page_obj,
         'filtro_status': filtro_status,
+        'filtro_loja': filtro_loja,  # <-- ADICIONADO: Retorna o filtro ativo para persistência no template
         'query': query,
         'per_page': int(per_page),
         'contagem_vencidos': metricas['total_vencidos'] or 0,

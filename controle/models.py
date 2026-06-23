@@ -40,11 +40,11 @@ class PerfilUsuario(models.Model):
         Retorna um QuerySet com todas as lojas que este usuário pode acessar.
         """
         # 1. Busca todas as lojas vinculadas diretamente ao perfil
-        lojas_diretas = self.lojas.all()
+        lojas_diretas = self.lojas.all().order_by('cod_loja')
         
         # 2. Busca todas as lojas vinculadas às redes que o usuário tem permissão
         # Como Loja tem id_rede (ForeignKey), usamos a relação reversa
-        lojas_por_rede = Loja.objects.filter(id_rede__in=self.redes.all())
+        lojas_por_rede = Loja.objects.order_by('cod_loja').filter(id_rede__in=self.redes.all())
         
         # 3. Une os dois resultados e remove duplicatas
         return (lojas_diretas | lojas_por_rede).distinct()

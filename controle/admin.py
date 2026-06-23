@@ -29,7 +29,7 @@ class UserAdmin(BaseUserAdmin):
     def exibir_lojas(self, obj):
         perfil = PerfilUsuario.objects.filter(user=obj).first()
         if perfil and perfil.lojas.exists():
-            return ", ".join([str(item.cod_loja) for item in perfil.lojas.all()])
+            return ", ".join([str(item.cod_loja) for item in perfil.lojas.all().order_by('cod_loja')])
         return "Sem Perfil cadastrado" if not perfil else "Sem Loja(s) cadastrada(s)"
 
     @admin.display(description='Vendedores')
