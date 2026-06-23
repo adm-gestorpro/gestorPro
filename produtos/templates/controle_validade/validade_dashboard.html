@@ -114,7 +114,7 @@
     </div>
 
     <div id="estatisticas-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <a href="?status=vencido{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" onclick="showLoading();" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'vencido' %}border-rose-600 ring-2 ring-rose-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+        <a href="?status=vencido{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}{% if filtro_loja %}&loja={{ filtro_loja }}{% endif %}" onclick="showLoading();" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'vencido' %}border-rose-600 ring-2 ring-rose-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
             <div class="absolute top-0 left-0 w-1 h-full bg-rose-600"></div>
             <div class="flex justify-between items-start">
                 <div>
@@ -131,7 +131,7 @@
             </div>
         </a>
 
-        <a href="?status=critico{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" onclick="showLoading();" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'critico' %}border-red-500 ring-2 ring-red-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+        <a href="?status=critico{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}{% if filtro_loja %}&loja={{ filtro_loja }}{% endif %}" onclick="showLoading();" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'critico' %}border-red-500 ring-2 ring-red-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
             <div class="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
             <div class="flex justify-between items-start">
                 <div>
@@ -148,7 +148,7 @@
             </div>
         </a>
 
-        <a href="?status=atencao{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" onclick="showLoading();" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'atencao' %}border-orange-500 ring-2 ring-orange-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+        <a href="?status=atencao{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}{% if filtro_loja %}&loja={{ filtro_loja }}{% endif %}" onclick="showLoading();" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'atencao' %}border-orange-500 ring-2 ring-orange-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
             <div class="absolute top-0 left-0 w-1 h-full bg-orange-500"></div>
             <div class="flex justify-between items-start">
                 <div>
@@ -165,7 +165,7 @@
             </div>
         </a>
 
-        <a href="?status=observacao{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" onclick="showLoading();" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'observacao' %}border-yellow-400 ring-2 ring-yellow-400/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+        <a href="?status=observacao{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}{% if filtro_loja %}&loja={{ filtro_loja }}{% endif %}" onclick="showLoading();" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'observacao' %}border-yellow-400 ring-2 ring-yellow-400/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
             <div class="absolute top-0 left-0 w-1 h-full bg-yellow-400"></div>
             <div class="flex justify-between items-start">
                 <div>
@@ -182,7 +182,7 @@
             </div>
         </a>
 
-        <a href="?status=seguro{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" onclick="showLoading();" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'seguro' %}border-emerald-500 ring-2 ring-emerald-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+        <a href="?status=seguro{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}{% if filtro_loja %}&loja={{ filtro_loja }}{% endif %}" onclick="showLoading();" class="bg-white dark:bg-slate-800 p-5 rounded-xl border {% if filtro_status == 'seguro' %}border-emerald-500 ring-2 ring-emerald-500/20{% else %}border-slate-200 dark:border-slate-700{% endif %} shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
             <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
             <div class="flex justify-between items-start">
                 <div>
@@ -200,11 +200,12 @@
         </a>
     </div>
 
-    {% if query or filtro_status %}
+    {% if query or filtro_status or filtro_loja %}
         <div class="flex flex-wrap items-center gap-2">
-            <span class="text-xs text-slate-500">Filtros ativos:</span>
+            <span class="text-xs text-slate-500">Filtros activos:</span>
             {% if query %}<span class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-2.5 py-1 rounded-md font-medium">Busca: "{{ query }}"</span>{% endif %}
             {% if filtro_status %}<span class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-2.5 py-1 rounded-md font-medium">Status: {{ filtro_status|title }}</span>{% endif %}
+            {% if filtro_loja %}<span class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-2.5 py-1 rounded-md font-medium">Loja: {{ filtro_loja }}</span>{% endif %}
             <a href="?per_page={{ per_page }}" onclick="showLoading();" class="text-xs text-blue-600 hover:underline font-medium ml-2">Limpar todos</a>
         </div>
     {% endif %}
@@ -212,11 +213,34 @@
     <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
         
         <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/50">
-            <div class="relative w-full sm:w-96">
-                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+            <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+                <div class="relative w-full sm:w-96">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                    </div>
+                    <input type="text" id="search-input" value="{{ query }}" class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 shadow-sm" placeholder="Digite para filtrar instantaneamente...">
                 </div>
-                <input type="text" id="search-input" value="{{ query }}" class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 shadow-sm" placeholder="Digite para filtrar instantaneamente...">
+                
+                <div class="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400 w-full sm:w-auto justify-start flex-wrap">
+                    <div class="flex items-center gap-2">
+                        <label for="per-page-select" class="whitespace-nowrap">Ver:</label>
+                        <select id="per-page-select" onchange="alterarItensPorPagina(this.value);" class="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg p-1.5 text-xs focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                            <option value="50" {% if per_page == 50 %}selected{% endif %}>50 por pág.</option>
+                            <option value="100" {% if per_page == 100 %}selected{% endif %}>100 por pág.</option>
+                            <option value="200" {% if per_page == 200 %}selected{% endif %}>200 por pág.</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <label for="loja-select" class="whitespace-nowrap">Loja:</label>
+                        <select id="loja-select" onchange="alterarLoja(this.value);" class="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg p-1.5 text-xs focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                            <option value="">Todas as lojas</option>
+                            {% for l in lojas %}
+                                <option value="{{ l.cod_loja }}" {% if filtro_loja|stringformat:"s" == l.cod_loja|stringformat:"s" %}selected{% endif %}>Loja {{ l.cod_loja }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
             </div>
             
             <div class="flex items-center gap-2 text-xs text-slate-400 font-medium">
@@ -350,20 +374,11 @@
                 <span class="text-sm text-slate-500 dark:text-slate-400">
                     Mostrando <span class="font-semibold text-slate-900 dark:text-white">{{ page_obj.start_index }}</span> a <span class="font-semibold text-slate-900 dark:text-white">{{ page_obj.end_index }}</span> de <span class="font-semibold text-slate-900 dark:text-white">{{ page_obj.paginator.count }}</span> registros
                 </span>
-                
-                <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                    <label for="per-page-select" class="whitespace-nowrap">Ver:</label>
-                    <select id="per-page-select" onchange="alterarItensPorPagina(this.value);" class="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg p-1.5 text-xs focus:ring-blue-500 focus:border-blue-500 shadow-sm">
-                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50 por pág.</option>
-                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100 por pág.</option>
-                        <option value="200" {% if per_page == 200 %}selected{% endif %}>200 por pág.</option>
-                    </select>
-                </div>
             </div>
 
             <div class="inline-flex rounded-md shadow-sm">
                 {% if page_obj.has_previous %}
-                    <a href="?page={{ page_obj.previous_page_number }}{% if filtro_status %}&status={{ filtro_status }}{% endif %}{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" onclick="showLoading();" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-l-lg hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors">
+                    <a href="?page={{ page_obj.previous_page_number }}{% if filtro_status %}&status={{ filtro_status }}{% endif %}{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}{% if filtro_loja %}&loja={{ filtro_loja }}{% endif %}" onclick="showLoading();" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-l-lg hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors">
                         Anterior
                     </a>
                 {% else %}
@@ -373,7 +388,7 @@
                 {% endif %}
 
                 {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}{% if filtro_status %}&status={{ filtro_status }}{% endif %}{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}" onclick="showLoading();" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-l-0 border-slate-300 rounded-r-lg hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors">
+                    <a href="?page={{ page_obj.next_page_number }}{% if filtro_status %}&status={{ filtro_status }}{% endif %}{% if query %}&q={{ query }}{% endif %}&per_page={{ per_page }}{% if filtro_loja %}&loja={{ filtro_loja }}{% endif %}" onclick="showLoading();" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-l-0 border-slate-300 rounded-r-lg hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors">
                         Próxima
                     </a>
                 {% else %}
@@ -616,6 +631,18 @@
         showLoading();
     }
 
+    function alterarLoja(lojaId) {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (lojaId) {
+            urlParams.set('loja', lojaId);
+        } else {
+            urlParams.delete('loja');
+        }
+        urlParams.set('page', '1');
+        window.location.search = urlParams.toString();
+        showLoading();
+    }
+
     function iniciarScanner() {
         const scannerContainer = document.getElementById('scanner-container');
         scannerContainer.classList.remove('hidden');
@@ -788,6 +815,6 @@
     }
 
     // ATIVA A ATUALIZAÇÃO AUTOMÁTICA A CADA 60 SEGUNDOS (60.000 ms)
-    setInterval(atualizarTabelaSilenciosamente, 10000);
+    setInterval(atualizarTabelaSilenciosamente, 60000);
 </script>
 {% endblock %}
