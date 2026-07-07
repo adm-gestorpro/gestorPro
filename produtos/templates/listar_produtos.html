@@ -1,51 +1,333 @@
 {% extends 'base.html' %}
 
-{% block page_name %}Produtos cadastrados{% endblock %}
+{% block page_name %}Consulta Produto{% endblock %}
 
 {% block content %}
-<div class="bg-white dark:bg-slate-800 shadow-sm sm:rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-    <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
-        <h5 class="text-xl font-bold text-slate-900 dark:text-white">Produtos cadastrados</h5>
-        <div class="flex items-center gap-3">
-            <form method="get" class="flex items-center gap-2">
-                <label class="text-sm text-slate-500 dark:text-slate-400">Exibir:</label>
-                <select name="per_page" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="this.form.submit()">
-                    <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
-                    <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
-                </select>
+<div class="max-w-7xl mx-auto space-y-6">
+
+    <div class="bg-white dark:bg-slate-800 shadow-sm sm:rounded-xl border border-slate-200 dark:border-slate-700 p-6 transition-all">
+        <div class="max-w-3xl mx-auto">
+            <h1 class="text-lg font-bold text-slate-900 dark:text-white mb-2 text-center sm:text-left">
+                Consulta Produto
+            </h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-4 text-center sm:text-left">
+                Pesquise por nome, código interno, EAN ou utilize a câmera do seu dispositivo.
+            </p>
+
+            <form method="POST" action="{% url 'listar_produtos' %}" id="search-form" class="flex flex-col sm:flex-row gap-3">
+                {% csrf_token %}
+                <div class="relative flex-grow">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <input type="text" name="q" id="search-input" value="{{ query|default:'' }}"
+                        class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 pr-4 py-3 dark:bg-slate-900/50 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500" 
+                        placeholder="Digite o nome, código interno ou código de barras..." autofocus autocomplete="off">
+                    
+                    <div id="produto-results" class="hidden absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl max-h-64 overflow-y-auto"></div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="button" onclick="openBarcodeScanner()" 
+                        class="inline-flex items-center justify-center px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 font-medium rounded-lg text-sm transition-colors border border-slate-300 dark:border-slate-600 shrink-0"
+                        title="Ler Código de Barras">
+                        <i class="fa-solid fa-barcode text-lg mr-2"></i>
+                        <span class="sm:hidden md:inline">Escanear</span>
+                    </button>
+
+                    <button type="submit" 
+                        class="inline-flex items-center justify-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm transition-colors shadow-sm shrink-0">
+                        <span>Consultar</span>
+                    </button>
+                </div>
             </form>
-            <button class="text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 font-medium rounded-lg text-sm px-4 py-2 dark:bg-slate-800 dark:text-white dark:border-slate-600 dark:hover:bg-slate-700"><i class="fa-solid fa-file-csv mr-2"></i>Exportar CSV</button>
         </div>
     </div>
 
-    <div class="relative overflow-x-auto">
-        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-slate-700 dark:text-gray-400 border-b dark:border-slate-600">
-                <tr>
-                    <th scope="col" class="px-6 py-3">Código</th>
-                    <th scope="col" class="px-6 py-3">EAN</th>
-                    <th scope="col" class="px-6 py-3">Descrição</th>
-                    <th scope="col" class="px-6 py-3">Status</th>
-                </tr>
-            </thead>
-            <tbody>
+    {% if not query %}
+    <div class="bg-white dark:bg-slate-800 shadow-sm sm:rounded-xl border border-slate-200 dark:border-slate-700 p-12 text-center">
+        <div class="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+            <i class="fa-solid fa-boxes-stacked"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-1">Nenhuma consulta realizada</h3>
+        <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+            Utilize a barra acima para pesquisar o inventário. Os dados de estoque, preços e validades por loja serão exibidos aqui.
+        </p>
+    </div>
+    {% endif %}
+
+    {% if query %}
+        {% if produtos %}
+            <div class="space-y-6">
                 {% for produto in produtos %}
-                <tr class="bg-white border-b dark:bg-slate-800 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600">
-                    <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">{{ produto.cod_produto }}</td>
-                    <td class="px-6 py-4">{{ produto.cod_gtin_principal }}</td>
-                    <td class="px-6 py-4">{{ produto.desc_produto }}</td>
-                    <td class="px-6 py-4">
-                        {% if produto.status_produto == '1' %}
-                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">Ativo</span>
-                        {% else %}
-                            <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-yellow-900 dark:text-yellow-300">Inativo</span>
-                        {% endif %}
-                    </td>
-                </tr>
+                <div class="bg-white dark:bg-slate-800 shadow-sm sm:rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden transition-all">
+                    <div class="p-6 bg-slate-50/50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="px-2.5 py-0.5 text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 rounded">
+                                    Cód: {{ produto.cod_produto }}
+                                </span>
+                                {% if produto.status_produto == '1' %}
+                                    <span class="bg-emerald-100 text-emerald-800 text-xs font-medium px-2 py-0.5 rounded dark:bg-emerald-900/50 dark:text-emerald-300">Ativo</span>
+                                {% else %}
+                                    <span class="bg-amber-100 text-amber-800 text-xs font-medium px-2 py-0.5 rounded dark:bg-amber-900/50 dark:text-amber-300">Inativo</span>
+                                {% endif %}
+                            </div>
+                            <h2 class="text-xl font-bold text-slate-900 dark:text-white">
+                                {{ produto.desc_produto }}
+                            </h2>
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-300">
+                            <div class="flex items-center gap-1.5 bg-white dark:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600">
+                                <i class="fa-solid fa-barcode text-slate-400"></i>
+                                <span><strong>EAN:</strong> {{ produto.cod_gtin_principal|default:"Não informado" }}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 bg-white dark:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600">
+                                <i class="fa-solid fa-box text-slate-400"></i>
+                                <span><strong>Embalagem:</strong> {{ produto.embalagem|default:"UN" }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-6">
+                        <h3 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-store"></i> Disponibilidade nas Lojas Permitidas
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {% for loja in produto.lojas_acesso %}
+                            <div class="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800/50 hover:border-slate-300 dark:hover:border-slate-600 transition-colors flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="font-bold text-slate-800 dark:text-slate-200 truncate" title="{{ loja.nome_loja }}">
+                                            {{ loja.nome_loja }}
+                                        </span>
+                                        <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                            Loja {{ loja.id_loja }}
+                                        </span>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-2 py-2 border-y border-slate-100 dark:border-slate-700/50 my-2">
+                                        <div>
+                                            <span class="text-xs text-slate-400 dark:text-slate-500 block">Preço de Venda</span>
+                                            <span class="text-base font-extrabold text-emerald-600 dark:text-emerald-400">
+                                                R$ {{ loja.preco_venda|floatformat:2 }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span class="text-xs text-slate-400 dark:text-slate-500 block">Estoque Disponível</span>
+                                            <span class="text-base font-extrabold text-slate-700 dark:text-slate-200">
+                                                {{ loja.estoque_disponivel }} <span class="text-xs font-normal text-slate-500">{{ produto.embalagem|default:"UN" }}</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 pt-1">
+                                    <button type="button" onclick="toggleValidades('val-{{ produto.cod_produto }}-{{ loja.id_loja }}')" 
+                                        class="w-full text-center px-3 py-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/30 rounded-md transition-colors flex items-center justify-center gap-1.5">
+                                        <i class="fa-regular fa-calendar-days"></i>
+                                        <span>Ver Validades Cadastradas</span>
+                                    </button>
+
+                                    <div id="val-{{ produto.cod_produto }}-{{ loja.id_loja }}" class="hidden mt-3 pt-3 border-t border-dashed border-slate-200 dark:border-slate-700">
+                                        {% if loja.validades %}
+                                        <div class="space-y-1.5">
+                                            <div class="grid grid-cols-3 text-[10px] font-bold text-slate-400 uppercase">
+                                                <span>Validade</span>
+                                                <span>Lote</span>
+                                                <span class="text-right">Qtd</span>
+                                            </div>
+                                            {% for val in loja.validades %}
+                                            <div class="grid grid-cols-3 text-xs text-slate-600 dark:text-slate-300 py-1 border-b border-slate-100 dark:border-slate-700/50 last:border-0">
+                                                <span class="font-medium {% if val.vencido %}text-red-500 font-bold{% endif %}">{{ val.data_validade }}</span>
+                                                <span class="truncate">{{ val.lote|default:"-" }}</span>
+                                                <span class="text-right font-semibold">{{ val.quantidade }}</span>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% else %}
+                                        <p class="text-xs text-center text-slate-400 py-1">Nenhuma validade registrada.</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                            </div>
+                            {% empty %}
+                            <div class="col-span-full py-6 text-center text-sm text-slate-400 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-800/30 rounded-lg border border-dashed border-slate-200 dark:border-slate-700">
+                                Você não possui acesso a nenhuma loja com este produto ou o produto não está vinculado.
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
                 {% endfor %}
-            </tbody>
-        </table>
+            </div>
+        {% else %}
+            <div class="bg-white dark:bg-slate-800 shadow-sm sm:rounded-xl border border-slate-200 dark:border-slate-700 p-12 text-center">
+                <div class="w-16 h-16 bg-amber-50 dark:bg-amber-900/30 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                    <i class="fa-solid fa-magnifying-glass-minus"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-1">Nenhum produto encontrado</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                    Não encontramos resultados para a busca <span class="font-semibold text-slate-700 dark:text-slate-300">"{{ query }}"</span>. Verifique o código ou tente outro termo.
+                </p>
+            </div>
+        {% endif %}
+    {% endif %}
+
+</div>
+
+<div id="scanner-modal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-700">
+        <div class="p-4 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+            <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-camera text-indigo-500"></i> Ler Código de Barras
+            </h3>
+            <button type="button" onclick="closeBarcodeScanner()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 w-8 h-8 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+        
+        <div class="p-4">
+            <div id="reader" class="w-full bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden min-h-[250px] flex items-center justify-center"></div>
+            <p class="text-xs text-center text-slate-500 dark:text-slate-400 mt-3">
+                Aponte a câmera do seu dispositivo para o código de barras do produto.
+            </p>
+        </div>
+        
+        <div class="p-4 bg-slate-50 dark:bg-slate-700/50 border-t border-slate-200 dark:border-slate-700 flex justify-end">
+            <button type="button" onclick="closeBarcodeScanner()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-600 dark:hover:bg-slate-500 text-slate-700 dark:text-white text-sm font-medium rounded-lg transition-colors">
+                Cancelar
+            </button>
+        </div>
     </div>
-    
-    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script>
+    // Lógica para controle do Accordion de Validades
+    function toggleValidades(id) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.toggle('hidden');
+        }
+    }
+
+    // Lógica para o Leitor de Código de Barras via Câmera
+    let html5QrcodeScanner = null;
+
+    function openBarcodeScanner() {
+        const modal = document.getElementById('scanner-modal');
+        modal.classList.remove('hidden');
+        
+        // Inicializa o leitor na div #reader
+        if (!html5QrcodeScanner) {
+            html5QrcodeScanner = new Html5Qrcode("reader");
+        }
+
+        const config = { fps: 10, qrbox: { width: 250, height: 100 } };
+        
+        html5QrcodeScanner.start(
+            { facingMode: "environment" }, // Prioriza a câmera traseira no celular
+            config,
+            (decodedText, decodedResult) => {
+                // Sucesso: Preenche o campo e submete automaticamente
+                document.getElementById('search-input').value = decodedText;
+                closeBarcodeScanner();
+                document.getElementById('search-form').submit();
+            },
+            (errorMessage) => {
+                // Ignore erros contínuos de leitura de frame vazio
+            }
+        ).catch((err) => {
+            console.error("Erro ao iniciar câmera: ", err);
+            alert("Não foi possível acessar a câmera. Verifique as permissões do navegador.");
+            closeBarcodeScanner();
+        });
+    }
+
+    function closeBarcodeScanner() {
+        const modal = document.getElementById('scanner-modal');
+        modal.classList.add('hidden');
+        
+        if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
+            html5QrcodeScanner.stop().then(() => {
+                html5QrcodeScanner.clear();
+            }).catch((err) => {
+                console.error("Erro ao parar câmera: ", err);
+            });
+        }
+    }
+
+    // --- NOVA LOGICA: PESQUISA INSTANTÂNEA DE PRODUTOS ---
+    const produtos = [
+        {% for p in produtos_modal %}
+        {
+            id: '{{ p.cod_produto }}',                             
+            nome: `{{ p.desc_produto|escapejs }}`,                 
+            codigo_interno: `{{ p.cod_produto|escapejs }}`,        
+            codigo_barras: `{{ p.cod_gtin_principal|default:''|escapejs }}` 
+        },
+        {% endfor %}
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const produtoSearch = document.getElementById('search-input');
+        const produtoResults = document.getElementById('produto-results');
+        const searchForm = document.getElementById('search-form');
+
+        if (produtoSearch && produtoResults) {
+            produtoSearch.addEventListener('input', function () {
+                const termo = this.value.toLowerCase().trim();
+                produtoResults.innerHTML = '';
+
+                if (termo.length === 0) {
+                    produtoResults.classList.add('hidden');
+                    return;
+                }
+
+                const filtrados = produtos.filter(produto => {
+                    return (
+                        produto.nome.toLowerCase().includes(termo) ||
+                        produto.codigo_interno.toLowerCase().includes(termo) ||
+                        produto.codigo_barras.toLowerCase().includes(termo)
+                    );
+                }).slice(0, 15); 
+
+                if (filtrados.length === 0) {
+                    produtoResults.innerHTML = `<div class="p-3 text-sm text-slate-500 dark:text-slate-400 text-center">Nenhum produto encontrado.</div>`;
+                } else {
+                    filtrados.forEach(produto => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = "w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 border-b border-slate-100 dark:border-slate-700 transition-colors block text-slate-900 dark:text-white";
+                        btn.innerHTML = `
+                            <div class="font-medium">${produto.nome}</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Int: ${produto.codigo_interno || '-'} | EAN: ${produto.codigo_barras || '-'}
+                            </div>
+                        `;
+                        
+                        btn.onclick = () => {
+                            produtoSearch.value = produto.nome; 
+                            produtoResults.classList.add('hidden');
+                            searchForm.submit(); // Envia o formulário automaticamente ao escolher o produto
+                        };
+                        produtoResults.appendChild(btn);
+                    });
+                }
+                produtoResults.classList.remove('hidden');
+            });
+
+            // Fecha a lista de sugestões se o usuário clicar fora do input ou do container de resultados
+            document.addEventListener('click', function (e) {
+                if (!produtoSearch.contains(e.target) && !produtoResults.contains(e.target)) {
+                    produtoResults.classList.add('hidden');
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}

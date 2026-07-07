@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     'clientes',
     'fornecedores',
     'sslserver',
-    'django_extensions'
+    'django_extensions',
 ]
 
 MIDDLEWARE = [

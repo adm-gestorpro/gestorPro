@@ -6,6 +6,7 @@ from django.db.models import F, Value, CharField, Count, Q, Case, When, Expressi
 from django.db.models.functions import ExtractDay
 from django.http import QueryDict
 from django.shortcuts import render, redirect
+from django.utils import timezone
 
 from produtos.models import Produto, Validade
 from controle.models import Loja
@@ -32,15 +33,80 @@ def checa_multiplos_grupos_403(nomes_grupos):
 
 @login_required
 def listar_produtos(request):
-    produtos_list = Produto.objects.all().order_by('cod_produto')
+    # Alimenta o array de busca instantânea do JavaScript (tanto no GET quanto no POST)
+    produtos_modal = Produto.objects.all()
 
-    per_page = request.GET.get('per_page', 50)
-    paginator = Paginator(produtos_list, per_page)
+    query = ''
+    produtos_resultado = []
 
-    page_number = request.GET.get('page')
-    produtos = paginator.get_page(page_number)
+    if request.method == 'POST':
+        # Correção: Como o formulário no HTML usa method="POST", pegamos do request.POST
+        query = request.POST.get('q', '').strip()
 
-    context = {'produtos': produtos, 'per_page': int(per_page)}
+        # Só realiza a busca se o usuário tiver digitado ou escaneado algo
+        if query:
+            # 1. Filtra os produtos por Código Interno, EAN/GTIN ou Descrição (case-insensitive)
+            produtos_queryset = Produto.objects.filter(
+                Q(cod_produto__icontains=query) |
+                Q(cod_gtin_principal__icontains=query) |
+                Q(desc_produto__icontains=query)
+            ).distinct()
+
+            # 2. Identifica quais lojas o usuário logado tem permissão para acessar
+            lojas_usuario = request.user.perfil.get_lojas_acessiveis()
+            print(lojas_usuario)
+
+            data_atual = timezone.now().date()
+
+            # 3. Monta a estrutura de dados rica que o HTML precisa renderizar
+            for produto in produtos_queryset:
+                lojas_acesso_dados = []
+
+                for loja in lojas_usuario:
+                    # Mantida a sua estrutura original comentada/configurada
+                    # relacao_estoque = EstoquePreco.objects.filter(
+                    #     produto=produto, 
+                    #     loja=loja
+                    # ).first()
+                    relacao_estoque = None
+
+                    # Se houver registro de estoque/preço para a loja, processa as validades
+                    if relacao_estoque:
+                        # Busca as validades/lotes deste produto nesta loja específica
+                        validades_queryset = Validade.objects.filter(
+                            produto=produto,
+                            loja=loja.cod_loja,
+                            quantidade__gt=0  # Apenas lotes que ainda possuem saldo
+                        ).order_by('data_validade')
+
+                        lista_validades = []
+                        for val in validades_queryset:
+                            lista_validades.append({
+                                'data_validade': val.data_validade.strftime('%d/%m/%Y'),
+                                'lote': val.numero_lote,
+                                'quantidade': val.quantidade,
+                                'vencido': val.data_validade < data_atual  # Flag para colorir de vermelho se vencido
+                            })
+
+                        lojas_acesso_dados.append({
+                            'id_loja': loja.id,
+                            'nome_loja': loja.nome_fantasia,
+                            'preco_venda': relacao_estoque.preco_venda,
+                            'estoque_disponivel': relacao_estoque.quantidade_estoque,
+                            'validades': lista_validades
+                        })
+
+                # Adiciona os atributos dinâmicos ao objeto do produto para leitura direta no template
+                produto.lojas_acesso = lojas_acesso_dados
+                produtos_resultado.append(produto)
+
+    # Contexto unificado retornando sempre os produtos do modal para o autocompletar funcionar
+    context = {
+        'query': query,
+        'produtos': produtos_resultado,
+        'produtos_modal': produtos_modal,
+    }
+    
     return render(request, 'listar_produtos.html', context)
 
 
