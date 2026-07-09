@@ -12,6 +12,8 @@ from django.http import JsonResponse
 from produtos.models import Produto, Validade
 from controle.models import Loja
 
+from controle.scripts.consulta_estoques import consulta_estoque
+
 
 @login_required
 def erro_403_customizado(request, exception=None):
@@ -55,7 +57,6 @@ def listar_produtos(request):
 
             # 2. Identifica quais lojas o usuário logado tem permissão para acessar
             lojas_usuario = request.user.perfil.get_lojas_acessiveis()
-            print(lojas_usuario)
 
             data_atual = timezone.now().date()
 
@@ -69,38 +70,37 @@ def listar_produtos(request):
                     #     produto=produto, 
                     #     loja=loja
                     # ).first()
-                    relacao_estoque = None
+                    relacao_estoque = consulta_estoque(produto, loja)
 
                     # Se houver registro de estoque/preço para a loja, processa as validades
                     if relacao_estoque:
                         # Busca as validades/lotes deste produto nesta loja específica
                         validades_queryset = Validade.objects.filter(
-                            produto=produto,
-                            loja=loja.cod_loja,
-                            quantidade__gt=0  # Apenas lotes que ainda possuem saldo
-                        ).order_by('data_validade')
+                            id_produto=produto,
+                            cod_loja=loja.cod_loja,
+                            qt_lote__gt=0  # Apenas lotes que ainda possuem saldo
+                        ).order_by('dt_validade')
 
                         lista_validades = []
                         for val in validades_queryset:
                             lista_validades.append({
-                                'data_validade': val.data_validade.strftime('%d/%m/%Y'),
-                                'lote': val.numero_lote,
-                                'quantidade': val.quantidade,
-                                'vencido': val.data_validade < data_atual  # Flag para colorir de vermelho se vencido
+                                'data_validade': val.dt_validade.strftime('%d/%m/%Y'),
+                                'lote': val.num_lote,
+                                'quantidade': val.qt_lote,
+                                'vencido': val.dt_validade < data_atual  # Flag para colorir de vermelho se vencido
                             })
 
                         lojas_acesso_dados.append({
-                            'id_loja': loja.id,
-                            'nome_loja': loja.nome_fantasia,
-                            'preco_venda': relacao_estoque.preco_venda,
-                            'estoque_disponivel': relacao_estoque.quantidade_estoque,
+                            'id_loja': loja.cod_loja,
+                            #'preco_venda': relacao_estoque.preco_venda,
+                            'estoque_disponivel': relacao_estoque,
                             'validades': lista_validades
                         })
 
                 # Adiciona os atributos dinâmicos ao objeto do produto para leitura direta no template
                 produto.lojas_acesso = lojas_acesso_dados
                 produtos_resultado.append(produto)
-
+    
     # Contexto unificado retornando sempre os produtos do modal para o autocompletar funcionar
     context = {
         'query': query,
