@@ -265,15 +265,15 @@
                 <tbody id="tabela-validades" class="block md:table-row-group p-4 md:p-0 space-y-4 md:space-y-0 md:divide-y divide-slate-200 dark:divide-slate-700">
                     {% for item in page_obj %}
                     <tr class="product-row flex flex-col md:table-row border border-slate-200 dark:border-slate-700 md:border-none rounded-xl md:rounded-none overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50 md:divide-y-0 hover:bg-white md:hover:bg-slate-50/50 dark:hover:bg-slate-750/30 transition-colors bg-white dark:bg-slate-800 shadow-sm md:shadow-none"
-                        data-search="{{ item.nome|escape }} {{ item.codigo_interno|escape }} {{ item.codigo_barras|escape }} {{ item.lote|escape }} {{ item.lancado_por|escape }} loja {{ item.loja|escape }} {% if item.promocao_ativa %}promocao ativa{% endif %}">
+                        data-search="{{ item.id_produto.desc_produto|escape }} {{ item.id_produto.cod_produto|escape }} {{ item.id_produto.cod_gtin_principal|escape }} {{ item.num_lote|escape }} {{ item.lancado_por_nome|escape }} loja {{ item.cod_loja.cod_loja|escape }} {% if item.promocao_ativa %}promocao ativa{% endif %}">
                         
                         <td class="block md:table-cell px-4 md:px-6 py-3 md:py-4 bg-slate-50/50 dark:bg-slate-800/80 md:bg-transparent">
                             <div class="flex flex-col">
-                                <span class="font-semibold text-slate-900 dark:text-white text-base md:text-sm">{{ item.nome }}</span>
+                                <span class="font-semibold text-slate-900 dark:text-white text-base md:text-sm">{{ item.id_produto.desc_produto }}</span>
                                 <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 md:text-slate-400 mt-1 md:mt-0.5">
-                                    <span>Int: <span class="font-mono text-slate-700 dark:text-slate-300">{{ item.codigo_interno }}</span></span>
-                                    <span>EAN: <span class="font-mono text-slate-700 dark:text-slate-300">{{ item.codigo_barras }}</span></span>
-                                    <span>Lançado por: <span class="font-mono text-slate-700 dark:text-slate-300">{{ item.lancado_por }} em {{ item.data_cadastro|date:"d/m/Y \à\s H:i" }}</span></span>
+                                    <span>Int: <span class="font-mono text-slate-700 dark:text-slate-300">{{ item.id_produto.cod_produto }}</span></span>
+                                    <span>EAN: <span class="font-mono text-slate-700 dark:text-slate-300">{{ item.id_produto.cod_gtin_principal }}</span></span>
+                                    <span>Lançado por: <span class="font-mono text-slate-700 dark:text-slate-300">{{ item.lancado_por_nome }} em {{ item.data_cadastro|date:"d/m/Y \à\s H:i" }}</span></span>
                                 </div>
                             </div>
                         </td>
@@ -281,19 +281,19 @@
                         <td class="text-center flex justify-between items-center md:table-cell px-4 md:px-6 py-3 md:py-4 md:whitespace-nowrap">
                             <span class="md:hidden text-xs font-medium text-slate-500 uppercase tracking-wide">Loja</span>
                             <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600">
-                                <i class="fa-solid fa-store mr-1.5 text-slate-400"></i> Loja {{ item.loja }}
+                                <i class="fa-solid fa-store mr-1.5 text-slate-400"></i> Loja {{ item.cod_loja.cod_loja }}
                             </span>
                         </td>
                         
                         <td class="text-center flex justify-between items-center md:table-cell px-4 md:px-6 py-3 md:py-4 font-mono text-xs text-slate-700 dark:text-slate-300">
                             <span class="md:hidden font-sans text-xs font-medium text-slate-500 uppercase tracking-wide">Lote</span>
-                            <span>{{ item.lote }}</span>
+                            <span>{{ item.num_lote }}</span>
                         </td>
                         
-                        <td class="text-center flex justify-between items-center md:table-cell px-4 md:px-6 py-3 md:py-4 md:whitespace-nowrap">
+                        <td class="text-center flex justify-between items-center md:table-cell px-4 md:px-6 py-3 md:py-4 font-mono text-xs text-slate-700 dark:text-slate-300">
                             <span class="md:hidden text-xs font-medium text-slate-500 uppercase tracking-wide">Vencimento</span>
                             <div class="flex flex-col">
-                                <span class="font-medium text-slate-900 dark:text-white">{{ item.data_vencimento|date:"d/m/Y" }}</span>
+                                <span class="font-medium text-slate-500 dark:text-white">{{ item.dt_validade|date:"d/m/Y" }}</span>
                                 <span class="text-xs font-medium {% if item.dias_restantes <= 30 %}text-red-500{% elif item.dias_restantes <= 60 %}text-orange-500{% else %}text-slate-400{% endif %}">
                                     {% if item.dias_restantes < 0 %}
                                         Vencido há <br>{{ item.dias_restantes|stringformat:"d"|slice:"1:" }} dias
@@ -332,8 +332,8 @@
 
                                 <button title="Editar Lote" 
                                     data-id="{{ item.id }}"
-                                    data-nome="{{ item.codigo_interno }} - {{ item.nome }}"
-                                    data-lote="{{ item.lote }}"
+                                    data-nome="{{ item.id_produto.cod_produto }} - {{ item.id_produto.desc_produto }}"
+                                    data-lote="{{ item.num_lote }}"
                                     data-validade="{{ item.dt_validade|date:'Y-m-d' }}"
                                     data-quantidade="{{ item.qt_lote|default:0 }}"
                                     data-troca="{{ item.tipo_lote|default:'' }}"
@@ -402,116 +402,110 @@
     </div>
 </div>
 
-    <div id="modal-edit" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-lg animate-in fade-in zoom-in duration-200 my-auto">
-            <div class="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white">Editar lote</h3>
-                <button type="button" onclick="fecharModal('modal-edit')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
-                    <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
+<div id="modal-edit" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-lg animate-in fade-in zoom-in duration-200 my-auto">
+        <div class="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Editar lote</h3>
+            <button type="button" onclick="fecharModal('modal-edit')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="form-edit" onsubmit="enviarEdicao(event)" class="p-5 space-y-4">
+            {% csrf_token %}
+            <input type="hidden" id="edit-id" name="id">
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Produto</label>
+                <input type="text" disabled id="edit-nome" style="text-transform: uppercase;" name="nome" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white">
             </div>
-            
-            <form id="form-edit" onsubmit="enviarEdicao(event)" class="p-5 space-y-4">
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Lote do produto</label>
+                    <input type="text" id="edit-lote" style="text-transform: uppercase;" name="lote" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Data de validade</label>
+                    <input type="date" id="edit-validade" name="data_validade" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantidade atual</label>
+                    <input type="number" id="edit-quantidade" name="quantidade" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white" placeholder="0">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Troca do fornecedor?</label>
+                    <select id="edit-troca" name="troca_fornecedor" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white">
+                        <option value="SG">Não (Sem troca)</option>
+                        <option value="TF">Sim (Permitido)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+                <input type="checkbox" id="edit-promocao-ativa" name="promocao_ativa" value="True"
+                    class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <label for="edit-promocao-ativa" class="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Lote com promoção ativa
+                </label>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Observações</label>
+                <textarea id="edit-obs" name="observacoes" rows="2" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white" placeholder="Detalhes adicionais sobre este lote..."></textarea>
+            </div>
+
+            <div class="pt-4 mt-2 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3">
+                <button type="button" onclick="fecharModal('modal-edit')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">Editar Lote</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modal-delete" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md">
+        <div class="p-5 border-b border-slate-200 dark:border-slate-700">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+                Confirmar inativação do lote
+            </h3>
+        </div>
+
+        <div class="p-5">
+            <p class="text-sm text-slate-600 dark:text-slate-300">
+                Deseja realmente inativar este lote?
+            </p>
+        </div>
+
+        <div class="flex justify-end gap-3 p-4 border-t border-slate-200 dark:border-slate-700">
+            <button
+                type="button"
+                onclick="fecharModal('modal-delete')"
+                class="px-4 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                Cancelar
+            </button>
+
+            <form id="form-delete" onsubmit="enviarInativacao(event)">
                 {% csrf_token %}
-                <input type="hidden" id="edit-id" name="id">
-
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Produto</label>
-                    <input type="text" disabled id="edit-nome" style="text-transform: uppercase;" name="nome" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white">
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Lote do produto</label>
-                        <input type="text" id="edit-lote" style="text-transform: uppercase;" name="lote" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Data de validade</label>
-                        <input type="date" id="edit-validade" name="data_validade" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantidade atual</label>
-                        <input type="number" id="edit-quantidade" name="quantidade" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white" placeholder="0">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Troca do fornecedor?</label>
-                        <select id="edit-troca" name="troca_fornecedor" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white">
-                            <option value="SG">Não (Sem troca)</option>
-                            <option value="TF">Sim (Permitido)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
-                    <input type="checkbox" id="edit-promocao-ativa" name="promocao_ativa" value="True"
-                        class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-                    <label for="edit-promocao-ativa" class="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Lote com promoção ativa
-                    </label>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Observações</label>
-                    <textarea id="edit-obs" name="observacoes" rows="2" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white" placeholder="Detalhes adicionais sobre este lote..."></textarea>
-                </div>
-
-                <div class="pt-4 mt-2 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3">
-                    <button type="button" onclick="fecharModal('modal-edit')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">Editar Lote</button>
-                </div>
+                <button
+                    type="submit"
+                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    >                    
+                    Inativar lote
+                </button>
             </form>
         </div>
     </div>
+</div>
 
-    <div id="modal-delete"
-        class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md">
-
-            <div class="p-5 border-b border-slate-200 dark:border-slate-700">
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white">
-                    Confirmar inativação do lote
-                </h3>
-            </div>
-
-            <div class="p-5">
-                <p class="text-sm text-slate-600 dark:text-slate-300">
-                    Deseja realmente inativar este lote?
-                </p>
-            </div>
-
-            <div class="flex justify-end gap-3 p-4 border-t border-slate-200 dark:border-slate-700">
-
-                <button
-                    type="button"
-                    onclick="fecharModal('modal-delete')"
-                    class="px-4 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-
-                    Cancelar
-                </button>
-
-                <form id="form-delete" method="DELETE">
-                    {% csrf_token %}
-
-                    <button
-                        type="submit"
-                        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors">
-
-                        Inativar lote
-                    </button>
-                </form>
-
-            </div>
-        </div>
-    </div>
-    <div id="loading-overlay" class="fixed inset-0 z-[9999] hidden flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm transition-opacity">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mb-4"></div>
-        <h2 class="text-xl font-bold text-white">Processando...</h2>
-        <p class="text-slate-300 mt-2 text-sm">Por favor, aguarde enquanto salvamos as informações.</p>
-    </div>
+<div id="loading-overlay" class="fixed inset-0 z-[9999] hidden flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm transition-opacity">
+    <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mb-4"></div>
+    <h2 class="text-xl font-bold text-white">Processando...</h2>
+    <p class="text-slate-300 mt-2 text-sm">Por favor, aguarde enquanto salvamos as informações.</p>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -530,27 +524,16 @@
         overlay.classList.remove('flex');
     }
 
-    const produtos = [
-        {% for p in produtos_modal %}
-        {
-            id: '{{ p.cod_produto }}',                             
-            nome: `{{ p.desc_produto|escapejs }}`,                 
-            codigo_interno: `{{ p.cod_produto|escapejs }}`,        
-            codigo_barras: `{{ p.cod_gtin_principal|default:''|escapejs }}` 
-        },
-        {% endfor %}
-    ];
-
     let html5QrCode = null;
+    let timeoutBusca = null;
 
     document.addEventListener('DOMContentLoaded', () => {
         const searchInputTabela = document.getElementById('search-input');
-        const productRows = document.querySelectorAll('.product-row');
 
         if (searchInputTabela) {
             searchInputTabela.addEventListener('input', (e) => {
                 const searchTerm = e.target.value.toLowerCase().trim();
-                const rows = document.querySelectorAll('.product-row'); // Pega novamente por causa do Ajax
+                const rows = document.querySelectorAll('.product-row');
                 rows.forEach(row => {
                     const rawData = row.getAttribute('data-search');
                     const searchData = (rawData ? rawData : '').toLowerCase();
@@ -573,52 +556,65 @@
             });
         }
 
+        // BUSCA ASSÍNCRONA DE PRODUTOS VIA AJAX (MODAL DE ADICIONAR LOTE)
         const produtoSearch = document.getElementById('produto-search');
         const produtoResults = document.getElementById('produto-results');
         const produtoId = document.getElementById('produto-id');
 
         if (produtoSearch) {
             produtoSearch.addEventListener('input', function () {
-                const termo = this.value.toLowerCase().trim();
+                const termo = this.value.trim();
                 produtoResults.innerHTML = '';
 
-                if (termo.length === 0) {
+                if (termo.length < 2) {
                     produtoResults.classList.add('hidden');
                     produtoId.value = '';
                     return;
                 }
 
-                const filtrados = produtos.filter(produto => {
-                    return (
-                        produto.nome.toLowerCase().includes(termo) ||
-                        produto.codigo_interno.toLowerCase().includes(termo) ||
-                        produto.codigo_barras.toLowerCase().includes(termo)
-                    );
-                }).slice(0, 15); 
+                // Limpa o temporizador anterior (Debounce)
+                clearTimeout(timeoutBusca);
 
-                if (filtrados.length === 0) {
-                    produtoResults.innerHTML = `<div class="p-3 text-sm text-slate-500 dark:text-slate-400">Nenhum produto encontrado.</div>`;
-                } else {
-                    filtrados.forEach(produto => {
-                        const btn = document.createElement('button');
-                        btn.type = 'button';
-                        btn.className = "w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 border-b border-slate-100 dark:border-slate-700 transition-colors";
-                        btn.innerHTML = `
-                            <div class="font-medium text-slate-900 dark:text-white">${produto.nome}</div>
-                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                Int: ${produto.codigo_interno || '-'} | EAN: ${produto.codigo_barras || '-'}
-                            </div>
-                        `;
-                        
-                        btn.onclick = () => {
-                            produtoSearch.value = produto.nome; 
-                            produtoId.value = produto.id;      
-                            produtoResults.classList.add('hidden');
-                        };
-                        produtoResults.appendChild(btn);
-                    });
-                }
-                produtoResults.classList.remove('hidden');
+                // Aguarda 300ms após o término da digitação para consultar o servidor
+                timeoutBusca = setTimeout(async () => {
+                    try {
+                        // ADAPTE A ROTA ABAIXO CASO SEU NAMESPACE OU URL SEJA DIFERENTE
+                        const urlBusca = "{% url 'api_buscar_produtos' %}";
+                        const response = await fetch(`${urlBusca}?q=${encodeURIComponent(termo)}`);
+                        const data = await response.json();
+                        const filtrados = data.resultados;
+
+                        produtoResults.innerHTML = '';
+
+                        if (filtrados.length === 0) {
+                            produtoResults.innerHTML = `<div class="p-3 text-sm text-slate-500 dark:text-slate-400">Nenhum produto encontrado.</div>`;
+                        } else {
+                            filtrados.forEach(produto => {
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = "w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 border-b border-slate-100 dark:border-slate-700 transition-colors";
+                                btn.innerHTML = `
+                                    <div class="font-medium text-slate-900 dark:text-white">${produto.nome}</div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                        Int: ${produto.codigo_interno || '-'} | EAN: ${produto.codigo_barras || '-'}
+                                    </div>
+                                `;
+                                
+                                btn.onclick = () => {
+                                    produtoSearch.value = produto.nome; 
+                                    produtoId.value = produto.id;      
+                                    produtoResults.classList.add('hidden');
+                                };
+                                produtoResults.appendChild(btn);
+                            });
+                        }
+                        produtoResults.classList.remove('hidden');
+                    } catch (error) {
+                        console.error("Erro ao buscar produtos:", error);
+                        produtoResults.innerHTML = `<div class="p-3 text-sm text-red-500">Erro ao consultar o servidor.</div>`;
+                        produtoResults.classList.remove('hidden');
+                    }
+                }, 300);
             });
         }
     });
@@ -714,7 +710,6 @@
         fecharScanner();
     }
 
-    // NOVA FUNÇÃO: POPULAR MODAL DE EDIÇÃO E ABRIR
     function abrirModalEditar(btnElement) {
         const id = btnElement.getAttribute('data-id');
         const nome = btnElement.getAttribute('data-nome');
@@ -743,16 +738,43 @@
         abrirModal('modal-edit');
     }
 
-    // NOVA FUNÇÃO: INTERCEPTAR O ENVIO DO FORMULÁRIO E MANDAR UM REQUEST "PUT"
+    async function enviarInativacao(event) {
+        event.preventDefault(); // Impede o navegador de mudar de página
+        showLoading();
+        
+        const form = event.target;
+        const url = form.action; // Captura a URL montada dinamicamente pelo abrirModal
+        const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                }
+            });
+
+            if (response.ok) {
+                fecharModal('modal-delete'); // Fecha o modal de confirmação
+                atualizarTabelaSilenciosamente(); // Atualiza os dados da tela instantaneamente
+            } else {
+                alert('Erro ao inativar o lote. Verifique e tente novamente.');
+            }
+        } catch (error) {
+            console.error('Erro de requisição:', error);
+            alert('Não foi possível se conectar com o servidor.');
+        } finally {
+            hideLoading();
+        }
+    }
+
     async function enviarEdicao(event) {
         event.preventDefault(); 
-        
-        // MOSTRA A TELA DE CARREGAMENTO
         showLoading();
         
         const form = event.target;
         const id = document.getElementById('edit-id').value;
-        const url = `editar_validade/${id}/`; // Adapte conforme o seu urls.py
+        const url = `editar_validade/${id}/`;
         
         const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
         const formData = new URLSearchParams(new FormData(form));
@@ -777,35 +799,29 @@
             console.error('Erro de requisição:', error);
             alert('Não foi possível se conectar com o servidor.');
         } finally {
-            // ESCONDE A TELA DE CARREGAMENTO AO TERMINAR (DANDO CERTO OU ERRADO)
             hideLoading();
         }
     }
 
-    // NOVA FUNÇÃO: ATUALIZAR TABELA EM BACKGROUND SEM RECARREGAR A PÁGINA
     function atualizarTabelaSilenciosamente() {
-        // Busca a mesma URL atual preservando os filtros ativos
         fetch(window.location.href)
             .then(response => response.text())
             .then(html => {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 
-                // 1. Atualizar o corpo da Tabela
                 const newTbody = doc.getElementById('tabela-validades');
                 const oldTbody = document.getElementById('tabela-validades');
                 if (newTbody && oldTbody) {
                     oldTbody.innerHTML = newTbody.innerHTML;
                 }
                 
-                // 2. Atualizar os Cards de Estatísticas
                 const newCards = doc.getElementById('estatisticas-cards');
                 const oldCards = document.getElementById('estatisticas-cards');
                 if (newCards && oldCards) {
                     oldCards.innerHTML = newCards.innerHTML;
                 }
 
-                // 3. Re-aplicar o filtro de busca local se o usuário já estiver digitando algo
                 const searchInputTabela = document.getElementById('search-input');
                 if (searchInputTabela && searchInputTabela.value.trim() !== '') {
                     searchInputTabela.dispatchEvent(new Event('input'));
@@ -814,7 +830,6 @@
             .catch(error => console.error('Erro no auto-refresh:', error));
     }
 
-    // ATIVA A ATUALIZAÇÃO AUTOMÁTICA A CADA 60 SEGUNDOS (60.000 ms)
     setInterval(atualizarTabelaSilenciosamente, 60000);
 </script>
 {% endblock %}
