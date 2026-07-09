@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
@@ -7,6 +7,7 @@ from django.db.models.functions import ExtractDay
 from django.http import QueryDict
 from django.shortcuts import render, redirect
 from django.utils import timezone
+from django.http import JsonResponse
 
 from produtos.models import Produto, Validade
 from controle.models import Loja
@@ -117,13 +118,42 @@ def cadastrar_lote(request):
 
 @login_required
 @checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Gerente Distrital', 'Atendente/Vendedor'])
+def api_buscar_produtos(request):
+    termo = request.GET.get('q', '').strip()
+    
+    # Só busca no banco se o usuário tiver digitado pelo menos 2 caracteres
+    if len(termo) < 2:
+        return JsonResponse({'resultados': []})
+        
+    produtos = Produto.objects.filter(
+        caixa=False
+    ).filter(
+        Q(desc_produto__icontains=termo) |
+        Q(cod_produto__icontains=termo) |
+        Q(cod_gtin_principal__icontains=termo)
+    ).only('cod_produto', 'desc_produto', 'cod_gtin_principal')
+
+    resultados = [
+        {
+            'id': p.cod_produto,
+            'nome': p.desc_produto,
+            'codigo_interno': p.cod_produto,
+            'codigo_barras': p.cod_gtin_principal or ''
+        }
+        for p in produtos
+    ]
+    
+    return JsonResponse({'resultados': resultados})
+
+@login_required
+@checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Gerente Distrital', 'Atendente/Vendedor'])
 def controle_validade(request):
     perfil = request.user.perfil
     lojas_permitidas = perfil.get_lojas_acessiveis()
 
     # 1. Parâmetros da requisição
     filtro_status = request.GET.get('status', '').strip().lower()
-    filtro_loja = request.GET.get('loja', '').strip()  # <-- ADICIONADO: Captura o código da loja filtrada
+    filtro_loja = request.GET.get('loja', '').strip()
     query = request.GET.get('q', '').strip()
     per_page = request.GET.get('per_page', '50')
     if per_page not in ['50', '100', '200']: 
@@ -131,50 +161,30 @@ def controle_validade(request):
 
     hoje = date.today()
 
-    # 2. QuerySet Base (Otimizado com select_related)
+    # 2. QuerySet Base Otimizado (select_related essencial)
     validades_qs = Validade.objects.filter(
         ativo=True, 
         cod_loja__in=lojas_permitidas
-    ).select_related('id_produto', 'cod_loja')
+    ).select_related('id_produto', 'cod_loja', 'usuario_cadastro')
 
-    # <-- ADICIONADO: Filtra pela loja selecionada se o parâmetro existir
     if filtro_loja:
         validades_qs = validades_qs.filter(cod_loja__cod_loja=filtro_loja)
 
-    # 3. Processamento de Datas e Estilos direto no PostgreSQL (Supabase)
-    validades_qs = validades_qs.annotate(
-        dias_restantes=ExtractDay(
-            ExpressionWrapper(F('dt_validade') - Value(hoje), output_field=DurationField())
-        )
-    ).annotate(
-        status_texto=Case(
-            When(dias_restantes__lt=0, then=Value("Vencido")),
-            When(dias_restantes__gte=0, dias_restantes__lte=30, then=Value("Crítico")),
-            When(dias_restantes__gt=30, dias_restantes__lte=60, then=Value("Atenção")),
-            When(dias_restantes__gt=60, dias_restantes__lte=90, then=Value("Observação")),
-            default=Value("Seguro"),
-            output_field=CharField()
-        ),
-        badge_class=Case(
-            When(dias_restantes__lt=0, then=Value("bg-black-100 text-white-900 border-black-300")),
-            When(dias_restantes__gte=0, dias_restantes__lte=30, then=Value("bg-red-100 text-red-800 border-red-200")),
-            When(dias_restantes__gt=30, dias_restantes__lte=60, then=Value("bg-orange-100 text-orange-800 border-orange-200")),
-            When(dias_restantes__gt=60, dias_restantes__lte=90, then=Value("bg-yellow-100 text-yellow-800 border-yellow-200")),
-            default=Value("bg-emerald-100 text-emerald-800 border-emerald-200"),
-            output_field=CharField()
-        )
-    )
+    # 3. Preparação de datas fixas para os Ranges
+    trinta_dias = hoje + timedelta(days=30)
+    sessenta_dias = hoje + timedelta(days=60)
+    noventa_dias = hoje + timedelta(days=90)
 
-    # 4. Métricas calculadas em uma única query agregada de alta velocidade
+    # 4. Métricas calculadas em query dedicada (Garante cache do banco)
     metricas = validades_qs.aggregate(
-        total_vencidos=Count('id', filter=Q(dias_restantes__lt=0)),
-        total_critico=Count('id', filter=Q(dias_restantes__gte=0, dias_restantes__lte=30)),
-        total_atencao=Count('id', filter=Q(dias_restantes__gt=30, dias_restantes__lte=60)),
-        total_observacao=Count('id', filter=Q(dias_restantes__gt=60, dias_restantes__lte=90)),
-        total_seguro=Count('id', filter=Q(dias_restantes__gt=90))
+        total_vencidos=Count('id', filter=Q(dt_validade__lt=hoje)),
+        total_critico=Count('id', filter=Q(dt_validade__gte=hoje, dt_validade__lte=trinta_dias)),
+        total_atencao=Count('id', filter=Q(dt_validade__gt=trinta_dias, dt_validade__lte=sessenta_dias)),
+        total_observacao=Count('id', filter=Q(dt_validade__gt=sessenta_dias, dt_validade__lte=noventa_dias)),
+        total_seguro=Count('id', filter=Q(dt_validade__gt=noventa_dias))
     )
 
-    # 5. Filtros textuais aplicados na busca do Banco
+    # 5. Aplicação de filtros textuais se existirem
     if query:
         validades_qs = validades_qs.filter(
             Q(id_produto__desc_produto__icontains=query) |
@@ -183,59 +193,59 @@ def controle_validade(request):
             Q(num_lote__icontains=query)
         )
 
-    # 6. Filtros de Status aplicados na busca do Banco
+    # 6. Filtros de Status baseados nas datas calculadas
     if filtro_status == 'vencido':
-        validades_qs = validades_qs.filter(dias_restantes__lt=0)
+        validades_qs = validades_qs.filter(dt_validade__lt=hoje)
     elif filtro_status == 'critico':
-        validades_qs = validades_qs.filter(dias_restantes__gte=0, dias_restantes__lte=30)
+        validades_qs = validades_qs.filter(dt_validade__gte=hoje, dt_validade__lte=trinta_dias)
     elif filtro_status == 'atencao':
-        validades_qs = validades_qs.filter(dias_restantes__gt=30, dias_restantes__lte=60)
+        validades_qs = validades_qs.filter(dt_validade__gt=trinta_dias, dt_validade__lte=sessenta_dias)
     elif filtro_status == 'observacao':
-        validades_qs = validades_qs.filter(dias_restantes__gt=60, dias_restantes__lte=90)
+        validades_qs = validades_qs.filter(dt_validade__gt=sessenta_dias, dt_validade__lte=noventa_dias)
     elif filtro_status == 'seguro':
-        validades_qs = validades_qs.filter(dias_restantes__gt=90)
+        validades_qs = validades_qs.filter(dt_validade__gt=noventa_dias)
 
-    # 7. Ordenação nativa por data de vencimento
+    # 7. Ordenação nativa e Paginação eficiente
     validades_qs = validades_qs.order_by('dt_validade')
-
-    # 8. Paginação eficiente (Trafega apenas o limite configurado por página)
     paginator = Paginator(validades_qs, int(per_page))
     page_obj = paginator.get_page(request.GET.get('page'))
 
-    # Mapeamento do subset da página atual para dicionários (Mantém compatibilidade com o Template Frontend)
-    lista_paginada_dict = []
+    # 8. Anotação Dinâmica no Python de atributos voláteis (Rápido e mantém o Objeto ativo)
     for p in page_obj.object_list:
-        lista_paginada_dict.append({
-            'id': p.id,
-            'nome': p.id_produto.desc_produto,
-            'loja': p.cod_loja.cod_loja,
-            'codigo_interno': p.id_produto.cod_produto,
-            'codigo_barras': p.id_produto.cod_gtin_principal,
-            'lote': p.num_lote,
-            'qt_lote': p.qt_lote,
-            'tipo_lote': p.tipo_lote,
-            'dt_validade': p.dt_validade,
-            'obs_geral': p.obs_geral,
-            'ativo': p.ativo,
-            'lancado_por': p.usuario_cadastro.first_name if p.usuario_cadastro else '',
-            'data_cadastro': p.data_cadastro,
-            'promocao_ativa': p.promocao_ativa,
-            'dias_restantes': p.dias_restantes,
-            'badge_class': p.badge_class,
-            'status_texto': p.status_texto
-        })
-    
-    # Injeta a lista convertida de volta ao objeto de paginação
-    page_obj.object_list = lista_paginada_dict
+        dias_restantes = (p.dt_validade - hoje).days
+        p.dias_restantes = dias_restantes  # Injeta direto no objeto na memória
+        
+        if dias_restantes < 0:
+            p.status_texto = "Vencido"
+            p.badge_class = "bg-rose-100 text-rose-800 border-rose-200"
+            p.badge_dot = "bg-rose-500"
+        elif dias_restantes <= 30:
+            p.status_texto = "Crítico"
+            p.badge_class = "bg-red-100 text-red-800 border-red-200"
+            p.badge_dot = "bg-red-500"
+        elif dias_restantes <= 60:
+            p.status_texto = "Atenção"
+            p.badge_class = "bg-orange-100 text-orange-800 border-orange-200"
+            p.badge_dot = "bg-orange-500"
+        elif dias_restantes <= 90:
+            p.status_texto = "Observação"
+            p.badge_class = "bg-yellow-100 text-yellow-800 border-yellow-200"
+            p.badge_dot = "bg-yellow-500"
+        else:
+            p.status_texto = "Seguro"
+            p.badge_class = "bg-emerald-100 text-emerald-800 border-emerald-200"
+            p.badge_dot = "bg-emerald-500"
 
-    # 9. Consultas auxiliares otimizadas para o Modal
-    produtos_query = Produto.objects.filter(caixa=False).only('cod_produto', 'desc_produto', 'cod_gtin_principal')
+        # Captura amigável do primeiro nome do usuário cadastrado
+        p.lancado_por_nome = p.usuario_cadastro.first_name if p.usuario_cadastro else 'Sistema'
+
+    # 9. Consultas auxiliares leves
     lojas = Loja.objects.filter(cod_loja__in=lojas_permitidas).order_by('cod_loja')
 
     context = {
         'page_obj': page_obj,
         'filtro_status': filtro_status,
-        'filtro_loja': filtro_loja,  # <-- ADICIONADO: Retorna o filtro ativo para persistência no template
+        'filtro_loja': filtro_loja,
         'query': query,
         'per_page': int(per_page),
         'contagem_vencidos': metricas['total_vencidos'] or 0,
@@ -243,12 +253,10 @@ def controle_validade(request):
         'contagem_60': metricas['total_atencao'] or 0,
         'contagem_90': metricas['total_observacao'] or 0,
         'contagem_seguro': metricas['total_seguro'] or 0,
-        'produtos_modal': produtos_query,
         'lojas': lojas,
     }
     
     return render(request, 'controle_validade/validade_dashboard.html', context)
-
 
 @login_required
 @checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Gerente Distrital', 'Atendente/Vendedor'])
@@ -257,11 +265,12 @@ def cadastrar_validade(request):
         dados = request.POST.dict()
         consulta_produto = Produto.objects.get(cod_produto=dados['produto'])
         consulta_loja = Loja.objects.get(cod_loja=dados['loja'])
+        
         consulta_validade = Validade.objects.filter(
             id_produto=consulta_produto, 
             num_lote__iexact=dados['lote'].strip(), 
             cod_loja=consulta_loja
-        ).exists()  # .exists() é mais rápido do que trazer o objeto inteiro
+        ).exists()
 
         if not consulta_validade:
             validade = Validade(
@@ -277,10 +286,17 @@ def cadastrar_validade(request):
             )
             validade.save()
         else:
-            qt_lote = float(Validade.objects.filter(id_produto=consulta_produto,num_lote__iexact=dados['lote'].strip(),cod_loja=consulta_loja).values('qt_lote')[0]['qt_lote']) + float(dados['quantidade'])
-            Validade.objects.filter(id_produto=consulta_produto,num_lote__iexact=dados['lote'].strip(),cod_loja=consulta_loja).update(qt_lote=qt_lote)
+            # OTIMIZAÇÃO EXTREMA: Soma direto no banco usando F expressions (Não puxa dados pra memória)
+            Validade.objects.filter(
+                id_produto=consulta_produto,
+                num_lote__iexact=dados['lote'].strip(),
+                cod_loja=consulta_loja
+            ).update(
+                qt_lote=F('qt_lote') + float(dados['quantidade']),
+                usuario_ultimo=request.user
+            )
+            
     return redirect('controle_validade')
-
 
 @login_required
 @checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Gerente Distrital'])
@@ -298,12 +314,18 @@ def editar_validade(request, id):
             usuario_ultimo=request.user,
             promocao_ativa=dados.get('promocao_ativa', False)
         )
-    return redirect('controle_validade')
+        # CORREÇÃO: Como o JS usa Fetch, retornamos JSON para responder em 10ms
+        return JsonResponse({'status': 'success'})
+        
+    return JsonResponse({'status': 'error', 'message': 'Método inválido'}, status=400)
 
 
 @login_required
 @checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Gerente Distrital'])
 def inativar_validade(request, id):
-    if request.method == 'DELETE':
+    if request.method == 'POST':
         Validade.objects.filter(id=id).update(ativo=False, usuario_ultimo=request.user)
-    return redirect('controle_validade')
+        # CORREÇÃO: Resposta instantânea sem carregar a view pesada por trás
+        return JsonResponse({'status': 'success'})
+        
+    return JsonResponse({'status': 'error', 'message': 'Método inválido'}, status=400)

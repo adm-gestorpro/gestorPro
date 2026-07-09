@@ -28,9 +28,15 @@ class Validade(models.Model):
     data_cadastro = models.DateTimeField(auto_now_add=True, verbose_name='Data e hora de cadastro')
     data_ultima = models.DateTimeField(auto_now=True, verbose_name='Data e hora da última alteração')
     num_lote = models.CharField(max_length=50, verbose_name='Lote do produto')
-    dt_validade = models.DateField(verbose_name='Data de validade')
+    dt_validade = models.DateField(db_index=True, verbose_name='Data de validade')
     qt_lote = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Quantidade do item do lote')
     tipo_lote = models.CharField(max_length=100, choices=TIPO_LOTE_CHOICES, verbose_name='Tipo do lote do produto')
     obs_geral = models.TextField(max_length=500, verbose_name='Observações gerais')
     ativo = models.BooleanField(default=True, verbose_name='Status do lote')
     promocao_ativa = models.BooleanField(default=False, verbose_name='Promoção ativa')
+
+    class Meta:
+        # Cria um índice inteligente combinando o status, a loja e a data
+        indexes = [
+            models.Index(fields=['ativo', 'cod_loja', 'dt_validade']),
+        ]
