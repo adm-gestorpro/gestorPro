@@ -76,12 +76,12 @@ def listar_produtos(request):
 
         if produto_id:
             # Fluxo ideal: o usuário clicou na sugestão e enviou o ID
-            produtos_queryset = Produto.objects.filter(cod_produto=produto_id)
+            produtos_queryset = Produto.objects.filter(cod_gtin_principal=produto_id)
         elif query:
             # Fallback: Se o usuário der Enter ou bipar o leitor sem clicar na lista, 
             # busca exata por código EAN ou Interno.
             produtos_queryset = Produto.objects.filter(
-                Q(cod_gtin_principal=query) | Q(cod_produto=query)
+                Q(cod_gtin_principal=query)# | Q(cod_produto=query)
             )
 
         # Se encontrou o produto, faz o cálculo de estoque/lojas/validade

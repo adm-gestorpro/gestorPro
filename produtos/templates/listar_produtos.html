@@ -11,7 +11,7 @@
                 Consulta Produto
             </h1>
             <p class="text-sm text-slate-500 dark:text-slate-400 mb-4 text-center sm:text-left">
-                Pesquise por código interno, EAN ou utilize a câmera do seu dispositivo.
+                Pesquise por código de barras ou utilize a câmera do seu dispositivo.
             </p>
 
             <form method="POST" action="{% url 'listar_produtos' %}" id="search-form" onsubmit="showLoading()" class="flex flex-col sm:flex-row gap-3">
@@ -23,7 +23,7 @@
                     </div>
                     <input type="number" name="q" id="search-input" value="{{ query|default:'' }}"
                         class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 pr-4 py-3 dark:bg-slate-900/50 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500" 
-                        placeholder="Digite o código interno ou código de barras..." autocomplete="off">
+                        placeholder="Digite o código de barras..." autocomplete="off">
                     
                     <div id="produto-results" class="hidden absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl max-h-64 overflow-y-auto"></div>
                 </div>
