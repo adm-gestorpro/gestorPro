@@ -10,9 +10,10 @@ from django.utils import timezone
 from django.http import JsonResponse
 
 from produtos.models import Produto, Validade
-from controle.models import Loja
+from controle.models import Loja, Rede
 
 from controle.scripts.consulta_estoques import consulta_estoque
+from controle.scripts.consulta_precos import consulta_preco
 
 
 @login_required
@@ -85,7 +86,27 @@ def listar_produtos(request):
 
         # Se encontrou o produto, faz o cálculo de estoque/lojas/validade
         if produtos_queryset:
+            # 1. Busca as lojas com permissão direta do usuário
             lojas_usuario = request.user.perfil.get_lojas_acessiveis()
+
+            # 2. Extrai os IDs das redes sem repetições e em ordem crescente
+            if hasattr(lojas_usuario, 'values_list'):
+                _ids_brutos = lojas_usuario.values_list('id_rede', flat=True).distinct()
+                # O set {} garante a exclusão de duplicatas e o sorted() ordena de forma crescente
+                redes_ids = sorted({r for r in _ids_brutos if r})
+            else:
+                # O mesmo processo, caso lojas_usuario seja uma lista comum
+                redes_ids = sorted({loja.rede_id for loja in lojas_usuario if getattr(loja, 'id_rede', None)})
+
+            # 3. Busca TODAS as lojas que pertencem a essas mesmas redes
+            if redes_ids and lojas_usuario:
+                ModelLoja = lojas_usuario[0].__class__
+                lojas_para_consultar = ModelLoja.objects.filter(
+                    id_rede__in=redes_ids
+                ).distinct().order_by('cod_loja')
+            else:
+                lojas_para_consultar = lojas_usuario
+
             data_atual = timezone.now().date()
 
             for produto in produtos_queryset:
@@ -93,6 +114,7 @@ def listar_produtos(request):
 
                 for loja in lojas_usuario:
                     relacao_estoque = consulta_estoque(produto, loja)
+                    relacao_preco = consulta_preco(produto, loja)
 
                     if relacao_estoque:
                         validades_queryset = Validade.objects.filter(
@@ -133,7 +155,8 @@ def listar_produtos(request):
                             'id_loja': loja.cod_loja,
                             'estoque_disponivel': relacao_estoque,
                             'validades': lista_validades,
-                            'estoque_desatualizado': estoque_desatualizado
+                            'estoque_desatualizado': estoque_desatualizado,
+                            'preco_venda': relacao_preco
                         })
 
                 produto.lojas_acesso = lojas_acesso_dados
