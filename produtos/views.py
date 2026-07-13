@@ -100,8 +100,7 @@ def listar_produtos(request):
 
             # 3. Busca TODAS as lojas que pertencem a essas mesmas redes
             if redes_ids and lojas_usuario:
-                ModelLoja = lojas_usuario[0].__class__
-                lojas_para_consultar = ModelLoja.objects.filter(
+                lojas_para_consultar = Loja.objects.filter(
                     id_rede__in=redes_ids
                 ).distinct().order_by('cod_loja')
             else:
@@ -112,7 +111,7 @@ def listar_produtos(request):
             for produto in produtos_queryset:
                 lojas_acesso_dados = []
 
-                for loja in lojas_usuario:
+                for loja in lojas_para_consultar:
                     relacao_estoque = consulta_estoque(produto, loja)
                     relacao_preco = consulta_preco(produto, loja)
 
