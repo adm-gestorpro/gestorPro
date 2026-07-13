@@ -81,7 +81,7 @@ def listar_produtos(request):
             # Fallback: Se o usuário der Enter ou bipar o leitor sem clicar na lista, 
             # busca exata por código EAN ou Interno.
             produtos_queryset = Produto.objects.filter(
-                Q(cod_gtin_principal=query) | Q(cod_produto=query)
+                Q(cod_gtin_principal=query)# | Q(cod_produto=query)
             )
 
         # Se encontrou o produto, faz o cálculo de estoque/lojas/validade
