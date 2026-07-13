@@ -11,18 +11,19 @@
                 Consulta Produto
             </h1>
             <p class="text-sm text-slate-500 dark:text-slate-400 mb-4 text-center sm:text-left">
-                Pesquise por nome, código interno, EAN ou utilize a câmera do seu dispositivo.
+                Pesquise por código interno, EAN ou utilize a câmera do seu dispositivo.
             </p>
 
             <form method="POST" action="{% url 'listar_produtos' %}" id="search-form" class="flex flex-col sm:flex-row gap-3">
                 {% csrf_token %}
+                <input type="hidden" name="produto_id" id="produto-id-input" value="">
                 <div class="relative flex-grow">
                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </div>
-                    <input type="text" name="q" id="search-input" value="{{ query|default:'' }}"
+                    <input type="number" name="q" id="search-input" value="{{ query|default:'' }}"
                         class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 pr-4 py-3 dark:bg-slate-900/50 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500" 
-                        placeholder="Digite o nome, código interno ou código de barras..." autofocus autocomplete="off">
+                        placeholder="Digite o código interno ou código de barras..." autofocus autocomplete="off">
                     
                     <div id="produto-results" class="hidden absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl max-h-64 overflow-y-auto"></div>
                 </div>
@@ -120,6 +121,12 @@
                                             <span class="text-base font-extrabold text-slate-700 dark:text-slate-200">
                                                 {{ loja.estoque_disponivel.estoque_disponivel|floatformat:0 }} <span class="text-xs font-normal text-slate-500">{{ produto.embalagem|default:"UN" }}</span>
                                             </span>
+                                            {% if loja.estoque_desatualizado %}
+                                                <span class="inline-flex items-center text-amber-500 dark:text-amber-400 cursor-help" 
+                                                    title="Atenção: A soma das quantidades dos lotes cadastrados está diferente do estoque atual da loja.">
+                                                    <i class="fa-solid fa-triangle-exclamation animate-pulse"></i>
+                                                </span>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
@@ -207,121 +214,69 @@
 
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <script>
-    // Lógica para controle do Accordion de Validades
     function toggleValidades(id) {
         const el = document.getElementById(id);
-        if (el) {
-            el.classList.toggle('hidden');
-        }
+        if (el) el.classList.toggle('hidden');
     }
 
-    // Lógica para o Leitor de Código de Barras via Câmera
-    let html5QrcodeScanner = null;
-
-    function openBarcodeScanner() {
-        const modal = document.getElementById('scanner-modal');
-        modal.classList.remove('hidden');
-        
-        // Inicializa o leitor na div #reader
-        if (!html5QrcodeScanner) {
-            html5QrcodeScanner = new Html5Qrcode("reader");
-        }
-
-        const config = { fps: 10, qrbox: { width: 250, height: 100 } };
-        
-        html5QrcodeScanner.start(
-            { facingMode: "environment" }, // Prioriza a câmera traseira no celular
-            config,
-            (decodedText, decodedResult) => {
-                // Sucesso: Preenche o campo e submete automaticamente
-                document.getElementById('search-input').value = decodedText;
-                closeBarcodeScanner();
-                document.getElementById('search-form').submit();
-            },
-            (errorMessage) => {
-                // Ignore erros contínuos de leitura de frame vazio
-            }
-        ).catch((err) => {
-            console.error("Erro ao iniciar câmera: ", err);
-            alert("Não foi possível acessar a câmera. Verifique as permissões do navegador.");
-            closeBarcodeScanner();
-        });
-    }
-
-    function closeBarcodeScanner() {
-        const modal = document.getElementById('scanner-modal');
-        modal.classList.add('hidden');
-        
-        if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
-            html5QrcodeScanner.stop().then(() => {
-                html5QrcodeScanner.clear();
-            }).catch((err) => {
-                console.error("Erro ao parar câmera: ", err);
-            });
-        }
-    }
-
-    // --- NOVA LOGICA: PESQUISA INSTANTÂNEA DE PRODUTOS ---
-    const produtos = [
-        {% for p in produtos_modal %}
-        {
-            id: '{{ p.cod_produto }}',                             
-            nome: `{{ p.desc_produto|escapejs }}`,                 
-            codigo_interno: `{{ p.cod_produto|escapejs }}`,        
-            codigo_barras: `{{ p.cod_gtin_principal|default:''|escapejs }}` 
-        },
-        {% endfor %}
-    ];
-
+    // --- NOVA LÓGICA DE AUTOCOMPLETAR VIA API ---
     document.addEventListener('DOMContentLoaded', () => {
         const produtoSearch = document.getElementById('search-input');
         const produtoResults = document.getElementById('produto-results');
         const searchForm = document.getElementById('search-form');
+        const idInput = document.getElementById('produto-id-input');
+        
+        let timeoutId;
 
         if (produtoSearch && produtoResults) {
             produtoSearch.addEventListener('input', function () {
-                const termo = this.value.toLowerCase().trim();
-                produtoResults.innerHTML = '';
-
-                if (termo.length === 0) {
+                clearTimeout(timeoutId); // Previne múltiplas requisições enquanto digita
+                const termo = this.value.trim();
+                
+                if (termo.length < 2) {
+                    produtoResults.innerHTML = '';
                     produtoResults.classList.add('hidden');
                     return;
                 }
 
-                const filtrados = produtos.filter(produto => {
-                    return (
-                        produto.nome.toLowerCase().includes(termo) ||
-                        produto.codigo_interno.toLowerCase().includes(termo) ||
-                        produto.codigo_barras.toLowerCase().includes(termo)
-                    );
-                }).slice(0, 15); 
-
-                if (filtrados.length === 0) {
-                    produtoResults.innerHTML = `<div class="p-3 text-sm text-slate-500 dark:text-slate-400 text-center">Nenhum produto encontrado.</div>`;
-                } else {
-                    filtrados.forEach(produto => {
-                        const btn = document.createElement('button');
-                        btn.type = 'button';
-                        btn.className = "w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 border-b border-slate-100 dark:border-slate-700 transition-colors block text-slate-900 dark:text-white";
-                        btn.innerHTML = `
-                            <div class="font-medium">${produto.nome}</div>
-                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                Int: ${produto.codigo_interno || '-'} | EAN: ${produto.codigo_barras || '-'}
-                            </div>
-                        `;
-                        
-                        btn.onclick = () => {
-                            produtoSearch.value = produto.nome; 
-                            produtoResults.classList.add('hidden');
-                            searchForm.submit(); // Envia o formulário automaticamente ao escolher o produto
-                        };
-                        produtoResults.appendChild(btn);
-                    });
-                }
-                produtoResults.classList.remove('hidden');
+                // Aguarda 300ms após o usuário parar de digitar para buscar
+                timeoutId = setTimeout(() => {
+                    fetch(`/api/buscar-produtos/?q=${encodeURIComponent(termo)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            produtoResults.innerHTML = '';
+                            
+                            if (data.produtos.length === 0) {
+                                produtoResults.innerHTML = `<div class="p-3 text-sm text-slate-500 dark:text-slate-400 text-center">Nenhum produto encontrado.</div>`;
+                            } else {
+                                data.produtos.forEach(produto => {
+                                    const btn = document.createElement('button');
+                                    btn.type = 'button';
+                                    btn.className = "w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 border-b border-slate-100 dark:border-slate-700 transition-colors block text-slate-900 dark:text-white";
+                                    btn.innerHTML = `
+                                        <div class="font-medium">${produto.nome}</div>
+                                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                            Int: ${produto.codigo_interno || '-'} | EAN: ${produto.codigo_barras || '-'}
+                                        </div>
+                                    `;
+                                    
+                                    // Ao clicar na sugestão:
+                                    btn.onclick = () => {
+                                        produtoSearch.value = produto.nome; 
+                                        idInput.value = produto.id; // Salva o ID exato
+                                        produtoResults.classList.add('hidden');
+                                        searchForm.submit(); // Envia para calcular o estoque!
+                                    };
+                                    produtoResults.appendChild(btn);
+                                });
+                            }
+                            produtoResults.classList.remove('hidden');
+                        })
+                        .catch(err => console.error('Erro na busca:', err));
+                }, 300); 
             });
 
-            // Fecha a lista de sugestões se o usuário clicar fora do input ou do container de resultados
+            // Fecha a lista se clicar fora
             document.addEventListener('click', function (e) {
                 if (!produtoSearch.contains(e.target) && !produtoResults.contains(e.target)) {
                     produtoResults.classList.add('hidden');
@@ -329,5 +284,45 @@
             });
         }
     });
+
+    // --- LEITOR DE CÓDIGO DE BARRAS ---
+    let html5QrcodeScanner = null;
+
+    function openBarcodeScanner() {
+        const modal = document.getElementById('scanner-modal');
+        modal.classList.remove('hidden');
+        
+        if (!html5QrcodeScanner) {
+            html5QrcodeScanner = new Html5Qrcode("reader");
+        }
+
+        const config = { fps: 10, qrbox: { width: 250, height: 100 } };
+        
+        html5QrcodeScanner.start(
+            { facingMode: "environment" }, 
+            config,
+            (decodedText, decodedResult) => {
+                // Ao ler pelo celular, limpamos o ID (para forçar a busca pelo EAN exato) e submetemos
+                document.getElementById('search-input').value = decodedText;
+                document.getElementById('produto-id-input').value = ''; 
+                closeBarcodeScanner();
+                document.getElementById('search-form').submit();
+            },
+            (errorMessage) => {}
+        ).catch((err) => {
+            console.error("Erro ao iniciar câmera: ", err);
+            alert("Não foi possível acessar a câmera.");
+            closeBarcodeScanner();
+        });
+    }
+
+    function closeBarcodeScanner() {
+        const modal = document.getElementById('scanner-modal');
+        modal.classList.add('hidden');
+        if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
+            html5QrcodeScanner.stop().then(() => html5QrcodeScanner.clear());
+        }
+    }
 </script>
+
 {% endblock %}

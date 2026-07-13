@@ -35,77 +35,113 @@ def checa_multiplos_grupos_403(nomes_grupos):
 
 
 @login_required
-def listar_produtos(request):
-    # Alimenta o array de busca instantânea do JavaScript (tanto no GET quanto no POST)
-    produtos_modal = Produto.objects.all()
+def buscar_produtos_api(request):
+    query = request.GET.get('q', '').strip()
+    
+    # Só pesquisa se tiver pelo menos 2 caracteres para economizar processamento
+    if len(query) < 2:
+        return JsonResponse({'produtos': []})
 
+    # Busca rápida limitando a 15 resultados
+    produtos = Produto.objects.filter(
+        Q(cod_produto__icontains=query) |
+        Q(cod_gtin_principal__icontains=query) |
+        Q(desc_produto__icontains=query)
+    ).distinct()[:15]
+
+    resultados = []
+    for p in produtos:
+        resultados.append({
+            'id': p.cod_produto,
+            'nome': p.desc_produto,
+            'codigo_interno': p.cod_produto,
+            'codigo_barras': p.cod_gtin_principal if p.cod_gtin_principal else ''
+        })
+
+    return JsonResponse({'produtos': resultados})
+
+
+@login_required
+def listar_produtos(request):
     query = ''
     produtos_resultado = []
 
     if request.method == 'POST':
-        # Correção: Como o formulário no HTML usa method="POST", pegamos do request.POST
+        # Recebemos o ID exato via campo oculto ou a query digitada
+        produto_id = request.POST.get('produto_id', '').strip()
         query = request.POST.get('q', '').strip()
 
-        # Só realiza a busca se o usuário tiver digitado ou escaneado algo
-        if query:
-            # 1. Filtra os produtos por Código Interno, EAN/GTIN ou Descrição (case-insensitive)
+        produtos_queryset = []
+
+        if produto_id:
+            # Fluxo ideal: o usuário clicou na sugestão e enviou o ID
+            produtos_queryset = Produto.objects.filter(cod_produto=produto_id)
+        elif query:
+            # Fallback: Se o usuário der Enter ou bipar o leitor sem clicar na lista, 
+            # busca exata por código EAN ou Interno.
             produtos_queryset = Produto.objects.filter(
-                Q(cod_produto__icontains=query) |
-                Q(cod_gtin_principal__icontains=query) |
-                Q(desc_produto__icontains=query)
-            ).distinct()
+                Q(cod_gtin_principal=query) | Q(cod_produto=query)
+            )
 
-            # 2. Identifica quais lojas o usuário logado tem permissão para acessar
+        # Se encontrou o produto, faz o cálculo de estoque/lojas/validade
+        if produtos_queryset:
             lojas_usuario = request.user.perfil.get_lojas_acessiveis()
-
             data_atual = timezone.now().date()
 
-            # 3. Monta a estrutura de dados rica que o HTML precisa renderizar
             for produto in produtos_queryset:
                 lojas_acesso_dados = []
 
                 for loja in lojas_usuario:
-                    # Mantida a sua estrutura original comentada/configurada
-                    # relacao_estoque = EstoquePreco.objects.filter(
-                    #     produto=produto, 
-                    #     loja=loja
-                    # ).first()
                     relacao_estoque = consulta_estoque(produto, loja)
 
-                    # Se houver registro de estoque/preço para a loja, processa as validades
                     if relacao_estoque:
-                        # Busca as validades/lotes deste produto nesta loja específica
                         validades_queryset = Validade.objects.filter(
                             id_produto=produto,
                             cod_loja=loja.cod_loja,
-                            qt_lote__gt=0  # Apenas lotes que ainda possuem saldo
+                            qt_lote__gt=0
                         ).order_by('dt_validade')
 
                         lista_validades = []
+                        total_validades = 0.0  # Usando float desde o início
+
                         for val in validades_queryset:
                             lista_validades.append({
                                 'data_validade': val.dt_validade.strftime('%d/%m/%Y'),
                                 'lote': val.num_lote,
                                 'quantidade': val.qt_lote,
-                                'vencido': val.dt_validade < data_atual  # Flag para colorir de vermelho se vencido
+                                'vencido': val.dt_validade < data_atual
                             })
+                            # Garante que a quantidade do lote seja somada como número
+                            total_validades += float(val.qt_lote)
+
+                        # 1. Extração segura do valor de estoque do objeto/dicionário
+                        try:
+                            if hasattr(relacao_estoque, 'estoque_disponivel'):
+                                qtd_estoque_loja = float(relacao_estoque.estoque_disponivel)
+                            elif isinstance(relacao_estoque, dict):
+                                qtd_estoque_loja = float(relacao_estoque.get('estoque_disponivel', 0))
+                            else:
+                                qtd_estoque_loja = float(relacao_estoque)
+                        except (ValueError, TypeError, AttributeError):
+                            qtd_estoque_loja = 0.0
+
+                        # 2. Comparação segura arredondando para 3 casas decimais
+                        # Isso impede que diferenças invisíveis (como 10.0 != 10.000000001) ativem o aviso
+                        estoque_desatualizado = round(total_validades, 3) != round(qtd_estoque_loja, 3)
 
                         lojas_acesso_dados.append({
                             'id_loja': loja.cod_loja,
-                            #'preco_venda': relacao_estoque.preco_venda,
                             'estoque_disponivel': relacao_estoque,
-                            'validades': lista_validades
+                            'validades': lista_validades,
+                            'estoque_desatualizado': estoque_desatualizado
                         })
 
-                # Adiciona os atributos dinâmicos ao objeto do produto para leitura direta no template
                 produto.lojas_acesso = lojas_acesso_dados
                 produtos_resultado.append(produto)
     
-    # Contexto unificado retornando sempre os produtos do modal para o autocompletar funcionar
     context = {
         'query': query,
         'produtos': produtos_resultado,
-        'produtos_modal': produtos_modal,
     }
     
     return render(request, 'listar_produtos.html', context)
