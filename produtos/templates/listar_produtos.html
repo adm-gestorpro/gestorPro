@@ -14,7 +14,7 @@
                 Pesquise por código interno, EAN ou utilize a câmera do seu dispositivo.
             </p>
 
-            <form method="POST" action="{% url 'listar_produtos' %}" id="search-form" class="flex flex-col sm:flex-row gap-3">
+            <form method="POST" action="{% url 'listar_produtos' %}" id="search-form" onsubmit="showLoading()" class="flex flex-col sm:flex-row gap-3">
                 {% csrf_token %}
                 <input type="hidden" name="produto_id" id="produto-id-input" value="">
                 <div class="relative flex-grow">
@@ -113,7 +113,7 @@
                                         <div>
                                             <span class="text-xs text-slate-400 dark:text-slate-500 block">Preço de Venda</span>
                                             <span class="text-base font-extrabold text-emerald-600 dark:text-emerald-400">
-                                                R$ {{ loja.preco_venda|floatformat:2 }}
+                                                R$ {{ loja.preco_venda.preco_venda|floatformat:2 }}
                                             </span>
                                         </div>
                                         <div>
@@ -128,6 +128,20 @@
                                                 </span>
                                             {% endif %}
                                         </div>
+                                        {% if loja.preco_venda.preco_oferta != '-' %}
+                                        <div>
+                                            <span class="text-xs text-slate-400 dark:text-slate-500 block">Preço em Oferta</span>
+                                            <span class="text-base font-extrabold text-amber-600 dark:text-amber-400">
+                                                R$ {{ loja.preco_venda.preco_oferta|floatformat:2 }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span class="text-xs text-slate-400 dark:text-slate-500 block">Oferta válida até</span>
+                                            <span class="text-base font-extrabold text-slate-700 dark:text-slate-200">
+                                                {{ loja.preco_venda.vigencia_oferta }}
+                                            </span>
+                                        </div>
+                                        {% endif %}
                                     </div>
                                 </div>
 
@@ -212,8 +226,26 @@
     </div>
 </div>
 
+<div id="loading-overlay" class="fixed inset-0 z-[9999] hidden flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm transition-opacity">
+    <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mb-4"></div>
+    <h2 class="text-xl font-bold text-white">Processando...</h2>
+    <p class="text-slate-300 mt-2 text-sm">Por favor, aguarde enquanto carregamos as informações.</p>
+</div>
+
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <script>
+    function showLoading() {
+        const overlay = document.getElementById('loading-overlay');
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+    }
+
+    function hideLoading() {
+        const overlay = document.getElementById('loading-overlay');
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+    }
+
     function toggleValidades(id) {
         const el = document.getElementById(id);
         if (el) el.classList.toggle('hidden');
