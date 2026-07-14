@@ -25,6 +25,7 @@ urlpatterns = [
     path('', include('controle.urls')),
     path('produtos/', include('produtos.urls')),
     path('fornecedores/', include('fornecedores.urls')),
+    path('tickets/', include('tickets.urls')),
 
     path('error403/', lambda r: permission_denied(r, Exception("Teste de erro 403"))),
 ]

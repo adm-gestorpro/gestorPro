@@ -228,3 +228,21 @@ class TicketComment(models.Model):
     def __str__(self):
         tipo = "Interno" if self.is_internal else "Público"
         return f"Comentário por {self.author.get_full_name() or self.author.username} ({tipo})"
+
+
+class TicketSubject(models.Model):
+    name = models.CharField(max_length=100)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='subjects')
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subcategories')
+
+    def get_full_path(self):
+        """Retorna o caminho completo da árvore (ex: Hardware > Impressoras > Toner)"""
+        path = [self.name]
+        current = self.parent
+        while current:
+            path.insert(0, current.name)
+            current = current.parent
+        return " ➔ ".join(path)
+
+    def __str__(self):
+        return self.get_full_path()

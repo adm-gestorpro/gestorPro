@@ -1,0 +1,451 @@
+{% extends "base.html" %}
+
+{% block title %}Chamados - GestorPro{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Suporte e Demandas</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Gerencie as suas solicitações ou atenda os chamados do seu setor.</p>
+        </div>
+        
+        <button type="button" data-modal-target="novoChamadoModal" data-modal-toggle="novoChamadoModal" 
+            class="text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800 transition-all duration-200 flex items-center gap-2 shrink-0 shadow-md hover:shadow-lg">
+            <i class="fa-solid fa-plus"></i> Abrir Chamado
+        </button>
+    </div>
+
+    <div class="mb-6 border-b border-slate-200 dark:border-slate-800">
+        <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="ticket-tabs" data-tabs-toggle="#ticket-tab-content" role="tablist">
+            <li class="mr-2" role="presentation">
+                <button class="inline-block p-4 border-b-2 rounded-t-lg transition-colors flex items-center gap-2" id="minhas-solicitacoes-tab" data-tabs-target="#minhas-solicitacoes" type="button" role="tab" aria-controls="minhas-solicitacoes" aria-selected="true">
+                    <i class="fa-solid fa-user-clock text-slate-400"></i> Minhas Solicitações
+                </button>
+            </li>
+            
+            {% if is_agent %}
+            <li class="mr-2" role="presentation">
+                <button class="inline-block p-4 border-b-2 rounded-t-lg hover:text-slate-600 hover:border-slate-300 dark:hover:text-slate-300 transition-colors flex items-center gap-2" id="fila-atendimento-tab" data-tabs-target="#fila-atendimento" type="button" role="tab" aria-controls="fila-atendimento" aria-selected="false">
+                    <i class="fa-solid fa-inbox text-slate-400"></i> Fila do Meu Setor
+                    <span class="inline-flex items-center justify-center w-5.5 h-5.5 text-xs font-semibold text-primary-800 bg-primary-100 rounded-full dark:bg-primary-900/50 dark:text-primary-300 px-1.5 ml-1">
+                        {{ incoming_tickets|length }}
+                    </span>
+                </button>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div id="ticket-tab-content">
+        
+        <div class="hidden" id="minhas-solicitacoes" role="tabpanel" aria-labelledby="minhas-solicitacoes-tab">
+            
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 mb-6 shadow-sm">
+                <div class="relative max-w-md w-full">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                    </div>
+                    <input type="text" id="busca-minhas" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:placeholder-slate-400 dark:text-white transition-colors" placeholder="Filtrar as minhas solicitações...">
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+                        <thead class="text-xs text-slate-700 uppercase bg-slate-50 border-b border-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700">
+                            <tr>
+                                <th scope="col" class="px-6 py-4 font-semibold">Identificação / Assunto</th>
+                                <th scope="col" class="px-6 py-4 font-semibold">Setor Destinatário</th>
+                                <th scope="col" class="px-6 py-4 font-semibold">Estado</th>
+                                <th scope="col" class="px-6 py-4 font-semibold">Data de Abertura</th>
+                                <th scope="col" class="px-6 py-4 font-semibold text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 dark:divide-slate-700" id="tabela-minhas">
+                            {% for ticket in my_tickets %}
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="hidden sm:flex w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 items-center justify-center text-slate-500 dark:text-slate-400 font-bold text-xs border border-slate-200 dark:border-slate-700">
+                                            #{{ ticket.id }}
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold text-slate-900 dark:text-white text-sm mb-0.5">{{ ticket.title }}</div>
+                                            <div class="text-xs text-slate-500 flex items-center gap-1">
+                                                <i class="fa-solid fa-tag text-[10px]"></i>
+                                                {{ ticket.subject.get_full_path|default:ticket.subject.name }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                        {{ ticket.department.name }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    {% if ticket.status == 'OPEN' %}
+                                        <span class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50">
+                                            <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span></span> Aberto
+                                        </span>
+                                    {% elif ticket.status == 'IN_PROGRESS' %}
+                                        <span class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50">
+                                            <i class="fa-solid fa-spinner fa-spin text-[10px]"></i> Em Atendimento
+                                        </span>
+                                    {% elif ticket.status == 'RESOLVED' %}
+                                        <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50">
+                                            <i class="fa-solid fa-check text-[10px]"></i> Resolvido
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                                            Fechado
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 text-xs">
+                                    {{ ticket.created_at|date:"d/m/Y H:i" }}
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <a href="#" class="inline-flex items-center justify-center p-2 text-slate-400 rounded-lg hover:text-primary-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Visualizar Detalhes">
+                                        <i class="fa-solid fa-chevron-right text-base"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="px-6 py-12 text-center">
+                                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 mb-3 text-lg">
+                                        <i class="fa-solid fa-inbox"></i>
+                                    </div>
+                                    <h5 class="text-sm font-semibold text-slate-900 dark:text-white mb-1">Sem chamados abertos por você</h5>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">Quando criar uma nova demanda, ela aparecerá nesta lista.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {% if is_agent %}
+        <div class="hidden" id="fila-atendimento" role="tabpanel" aria-labelledby="fila-atendimento-tab">
+            
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 mb-6 shadow-sm">
+                <div class="relative max-w-md w-full">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                    </div>
+                    <input type="text" id="busca-fila" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:placeholder-slate-400 dark:text-white transition-colors" placeholder="Filtrar chamados pendentes do setor...">
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+                        <thead class="text-xs text-slate-700 uppercase bg-slate-50 border-b border-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700">
+                            <tr>
+                                <th scope="col" class="px-6 py-4 font-semibold">Prioridade</th>
+                                <th scope="col" class="px-6 py-4 font-semibold">Solicitante / Assunto</th>
+                                <th scope="col" class="px-6 py-4 font-semibold">Árvore de Decisão (Assunto)</th>
+                                <th scope="col" class="px-6 py-4 font-semibold">SLA (Resolução)</th>
+                                <th scope="col" class="px-6 py-4 font-semibold text-right">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 dark:divide-slate-700" id="tabela-fila">
+                            {% for ticket in incoming_tickets %}
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                                <td class="px-6 py-4">
+                                    {% if ticket.priority == 'CRITICAL' %}
+                                        <span class="inline-flex items-center gap-1 text-xs font-semibold text-red-600 dark:text-red-400">
+                                            <span class="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span> Crítica
+                                        </span>
+                                    {% elif ticket.priority == 'HIGH' %}
+                                        <span class="inline-flex items-center gap-1 text-xs font-semibold text-orange-500">
+                                            <span class="w-2 h-2 bg-orange-500 rounded-full"></span> Alta
+                                        </span>
+                                    {% elif ticket.priority == 'MEDIUM' %}
+                                        <span class="inline-flex items-center gap-1 text-xs font-medium text-amber-500">
+                                            <span class="w-2 h-2 bg-amber-500 rounded-full"></span> Média
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center gap-1 text-xs font-medium text-slate-500">
+                                            <span class="w-2 h-2 bg-slate-400 rounded-full"></span> Baixa
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-xs dark:bg-primary-950 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
+                                            {{ ticket.requester.username|make_list|first|upper }}
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold text-slate-900 dark:text-white text-sm">{{ ticket.requester.get_full_name|default:ticket.requester.username }}</div>
+                                            <div class="text-xs text-slate-500 mt-0.5">#{{ ticket.id }} - {{ ticket.title }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td class="px-6 py-4">
+                                    <div class="text-xs font-medium text-slate-700 dark:text-slate-300 line-clamp-2 max-w-xs" title="{{ ticket.subject.get_full_path }}">
+                                        {{ ticket.subject.get_full_path|default:ticket.subject.name }}
+                                    </div>
+                                </td>
+
+                                <td class="px-6 py-4">
+                                    {% if ticket.sla_resolution_deadline %}
+                                        <div class="flex flex-col">
+                                            <span class="font-medium text-xs {% if ticket.sla_resolution_breached %}text-red-600 dark:text-red-400{% else %}text-slate-700 dark:text-slate-300{% endif %}">
+                                                {{ ticket.sla_resolution_deadline|date:"d/m/y H:i" }}
+                                            </span>
+                                            {% if ticket.sla_resolution_breached %}
+                                                <span class="text-[10px] text-red-500 dark:text-red-400 font-bold mt-0.5">
+                                                    <i class="fa-solid fa-triangle-exclamation"></i> Vencido
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-slate-400 text-xs">-</span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="px-6 py-4 text-right">
+                                    <a href="#" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary-700 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 hover:text-primary-800 dark:bg-slate-800 dark:border-slate-700 dark:text-primary-400 dark:hover:bg-slate-700 transition-colors">
+                                        Atender <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="px-6 py-12 text-center">
+                                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-500 mb-3 text-lg">
+                                        <i class="fa-solid fa-square-check"></i>
+                                    </div>
+                                    <h5 class="text-sm font-semibold text-slate-900 dark:text-white mb-1">Sua fila está vazia!</h5>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">Nenhum chamado pendente de resolução para o seu departamento.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<div id="novoChamadoModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-[10000] justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full backdrop-blur-sm bg-slate-900/50">
+    <div class="relative p-4 w-full max-w-4xl max-h-full">
+        <div class="relative bg-white rounded-xl shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            
+            <div class="flex items-center justify-between p-4 md:p-5 border-b border-slate-200 dark:border-slate-800 rounded-t">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Abrir Nova Demanda</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Siga o fluxo de categorização detalhado para o roteamento correto.</p>
+                </div>
+                <button type="button" class="text-slate-400 bg-transparent hover:bg-slate-200 hover:text-slate-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-slate-800 dark:hover:text-white transition-colors" data-modal-toggle="novoChamadoModal">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <form action="{% url 'ticket_create' %}" method="POST" class="p-4 md:p-5">
+                {% csrf_token %}
+                
+                <input type="hidden" name="subject_id" id="final_subject_id" value="" required>
+
+                <div class="grid gap-4 mb-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                    
+                    <div class="col-span-full">
+                        <label for="title" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Título Resumido da Solicitação <span class="text-red-500">*</span></label>
+                        <input type="text" name="title" id="title" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white" placeholder="Ex: Impressora do faturamento parou de puxar papel..." required>
+                    </div>
+
+                    <div class="col-span-1 md:col-span-2">
+                        <label for="department" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Setor Responsável <span class="text-red-500">*</span></label>
+                        <select id="department" name="department" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white cascade-select" required>
+                            <option value="" selected disabled>Escolha o setor responsável...</option>
+                            {% for dept in departments %}
+                                <option value="{{ dept.id }}">{{ dept.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-span-1 md:col-span-2">
+                        <label for="priority" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Urgência / Impacto <span class="text-red-500">*</span></label>
+                        <select id="priority" name="priority" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white" required>
+                            <option value="" selected disabled>Selecione a criticidade...</option>
+                            <option value="LOW">Baixa (Dúvidas/Melhorias)</option>
+                            <option value="MEDIUM">Média (Apenas eu com problema)</option>
+                            <option value="HIGH">Alta (Setor parcialmente parado)</option>
+                            <option value="CRITICAL">Crítica (Operação / Unidade Totalmente Parada)</option>
+                        </select>
+                    </div>
+
+                    <div id="container_l1" class="col-span-1 hidden">
+                        <label for="subject_l1" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Categoria <span class="text-red-500">*</span></label>
+                        <select id="subject_l1" data-level="1" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white cascade-select">
+                            <option value="" selected disabled>Selecione...</option>
+                        </select>
+                    </div>
+
+                    <div id="container_l2" class="col-span-1 hidden">
+                        <label for="subject_l2" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Subcategoria <span class="text-red-500">*</span></label>
+                        <select id="subject_l2" data-level="2" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white cascade-select">
+                            <option value="" selected disabled>Selecione...</option>
+                        </select>
+                    </div>
+
+                    <div id="container_l3" class="col-span-1 hidden">
+                        <label for="subject_l3" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Item <span class="text-red-500">*</span></label>
+                        <select id="subject_l3" data-level="3" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white cascade-select">
+                            <option value="" selected disabled>Selecione...</option>
+                        </select>
+                    </div>
+
+                    <div id="container_l4" class="col-span-1 hidden">
+                        <label for="subject_l4" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Detalhe <span class="text-red-500">*</span></label>
+                        <select id="subject_l4" data-level="4" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white cascade-select">
+                            <option value="" selected disabled>Selecione...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-span-full">
+                        <label for="description" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Descrição Completa da Situação <span class="text-red-500">*</span></label>
+                        <textarea id="description" name="description" rows="5" class="block p-2.5 w-full text-sm text-slate-900 bg-slate-50 rounded-lg border border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-white" placeholder="Relate logs de erros, passo a passo para reproduzir a falha ou o escopo do pedido..." required></textarea>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-end gap-3 mt-6 border-t border-slate-200 dark:border-slate-800 pt-4">
+                    <button type="button" data-modal-toggle="novoChamadoModal" class="text-slate-700 bg-white border border-slate-300 font-medium rounded-lg text-sm px-5 py-2.5 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-700 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 transition-colors flex items-center gap-2 shadow-sm hover:shadow">
+                        <i class="fa-solid fa-paper-plane"></i> Enviar Chamado
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{ subjects_json|json_script:"subjects-data" }}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // ----------------- FILTRO DE BUSCA LOCAL NAS TABELAS -----------------
+        const buscaMinhas = document.getElementById('busca-minhas');
+        const buscaFila = document.getElementById('busca-fila');
+
+        if (buscaMinhas) {
+            buscaMinhas.addEventListener('input', function() {
+                const termo = this.value.toLowerCase();
+                const linhas = document.querySelectorAll('#tabela-minhas tr');
+                linhas.forEach(linha => {
+                    const texto = linha.textContent.toLowerCase();
+                    linha.style.display = texto.includes(termo) ? '' : 'none';
+                });
+            });
+        }
+
+        if (buscaFila) {
+            buscaFila.addEventListener('input', function() {
+                const termo = this.value.toLowerCase();
+                const linhas = document.querySelectorAll('#tabela-fila tr');
+                linhas.forEach(linha => {
+                    const texto = linha.textContent.toLowerCase();
+                    linha.style.display = texto.includes(termo) ? '' : 'none';
+                });
+            });
+        }
+
+        // ----------------- CASCATA DE ATÉ 4 NÍVEIS -----------------
+        const subjects = JSON.parse(document.getElementById('subjects-data').textContent);
+        const finalSubjectInput = document.getElementById('final_subject_id');
+        const deptSelect = document.getElementById('department');
+        
+        // Mapeamento dos níveis L1 a L4 para simplificação do loop de manipulação de DOM
+        const levels = {
+            1: { select: document.getElementById('subject_l1'), container: document.getElementById('container_l1') },
+            2: { select: document.getElementById('subject_l2'), container: document.getElementById('container_l2') },
+            3: { select: document.getElementById('subject_l3'), container: document.getElementById('container_l3') },
+            4: { select: document.getElementById('subject_l4'), container: document.getElementById('container_l4') },
+        };
+
+        // Reseta e esconde select boxes a partir de um determinado nível
+        function clearAndHideFromLevel(startLevel) {
+            for (let i = startLevel; i <= 4; i++) {
+                if (levels[i].select) {
+                    levels[i].select.innerHTML = '<option value="" selected disabled>Selecione...</option>';
+                    levels[i].select.required = false;
+                    levels[i].container.classList.add('hidden');
+                }
+            }
+        }
+
+        // Preenche de forma dinâmica e exibe a próxima caixinha caso existam dados
+        function populateLevel(levelIndex, data) {
+            const selectElement = levels[levelIndex].select;
+            const containerElement = levels[levelIndex].container;
+            
+            if (data.length > 0) {
+                data.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.textContent = item.name;
+                    selectElement.appendChild(opt);
+                });
+                selectElement.required = true;
+                containerElement.classList.remove('hidden');
+                
+                // Força o reset do input final já que o usuário obrigatoriamente deve selecionar o nível abaixo
+                finalSubjectInput.value = ''; 
+            }
+        }
+
+        // Evento 0: Mudança de Setor
+        deptSelect.addEventListener('change', function() {
+            const deptId = parseInt(this.value);
+            clearAndHideFromLevel(1);
+            finalSubjectInput.value = '';
+
+            // Busca as categorias raiz (L1) deste departamento (as quais possuem parent_id igual a null)
+            const roots = subjects.filter(s => s.department_id === deptId && s.parent_id === null);
+            populateLevel(1, roots);
+        });
+
+        // Eventos de 1 a 4: Cascata Genérica Inteligente
+        document.querySelectorAll('.cascade-select').forEach(select => {
+            select.addEventListener('change', function() {
+                const currentLevel = parseInt(this.getAttribute('data-level'));
+                
+                // Ignora mudanças feitas no seletor de Setores (ele é tratado acima)
+                if (!currentLevel) return;
+
+                const selectedId = parseInt(this.value);
+                
+                // Assume temporariamente o ID corrente como o assunto selecionado
+                finalSubjectInput.value = selectedId;
+
+                // Limpa e oculta os níveis subsequentes ao atual
+                const nextLevel = currentLevel + 1;
+                clearAndHideFromLevel(nextLevel);
+
+                // Se houver um próximo nível no layout, filtra se existem nós filhos associados
+                if (nextLevel <= 4) {
+                    const children = subjects.filter(s => s.parent_id === selectedId);
+                    populateLevel(nextLevel, children);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+{% endblock %}
