@@ -316,7 +316,7 @@
                     
                     <div class="col-span-full">
                         <label for="description" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Descrição Completa da Situação <span class="text-red-500">*</span></label>
-                        <textarea id="description" name="description" rows="5" class="block p-2.5 w-full text-sm text-slate-900 bg-slate-50 rounded-lg border border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-white" placeholder="Relate logs de erros, passo a passo para reproduzir a falha ou o escopo do pedido..." required></textarea>
+                        <textarea id="description" name="description" rows="10" class="block p-2.5 w-full text-sm text-slate-900 bg-slate-50 rounded-lg border border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-white" placeholder="Relate logs de erros, passo a passo para reproduzir a falha ou o escopo do pedido..." required></textarea>
                     </div>
                 </div>
                 
@@ -381,10 +381,14 @@
         // Reseta e esconde select boxes a partir de um determinado nível
         function clearAndHideFromLevel(startLevel) {
             for (let i = startLevel; i <= 4; i++) {
-                if (levels[i].select) {
-                    levels[i].select.innerHTML = '<option value="" selected disabled>Selecione...</option>';
-                    levels[i].select.required = false;
-                    levels[i].container.classList.add('hidden');
+                let select = document.getElementById('subject_l' + i);
+                let container = document.getElementById('container_l' + i);
+                
+                if (select) {
+                    // Remove opções anteriores
+                    select.innerHTML = '<option value="" selected disabled>Selecione...</option>';
+                    // Esconde o campo para o usuário não se confundir
+                    container.classList.add('hidden');
                 }
             }
         }
