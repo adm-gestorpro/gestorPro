@@ -12,34 +12,48 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from .models import Ticket, Department, TicketSubject
 
+import json
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from .models import Ticket, Department, TicketSubject
+
 @login_required
 def ticket_list(request):
     user = request.user
     
-    # 1. Chamados que o próprio usuário abriu (visível para todos)
+    # 1. MINHAS SOLICITAÇÕES: Chamados abertos pelo usuário (Todos veem)
     my_tickets = Ticket.objects.filter(requester=user).order_by('-created_at')
     
-    # 2. NOVA REGRA: Apenas "administrador" ou "departamento pessoal" tratam chamados
-    # Mapeamos os nomes exatos dos grupos cadastrados no seu painel administrativo do Django
-    grupos_permitidos = [
-        'administrador', 'Administrador', 
-        'departamento pessoal', 'Departamento Pessoal', 'DP'
-    ]
+    # 2. CONTROLE DE ACESSO (RBAC) E FILAS DE ATENDIMENTO
+    # Usamos '__icontains' para abranger variações de digitação (ex: Administrador, administradores)
+    is_admin = user.groups.filter(name__icontains='administrador').exists()
     
-    # Verificamos se o usuário pertence a qualquer um dos grupos acima
-    is_agent = user.groups.filter(name__in=grupos_permitidos).exists()
+    # Liste aqui os nomes EXATOS dos grupos que resolvem chamados no seu sistema
+    grupos_departamentais = [
+        'Departamento Pessoal', 'Suporte', 'Financeiro', 'Contábil', 'TI', 'Manutenção'
+    ]
+    is_agent_dept = user.groups.filter(name__in=grupos_departamentais).exists()
+    
+    # A aba de "Fila de Atendimento" só aparece se ele for Admin ou de um dos grupos acima
+    is_agent = is_admin or is_agent_dept
     
     incoming_tickets = []
     if is_agent:
-        # Se for do grupo permitido, filtramos os chamados destinados ao departamento DELE
-        if hasattr(user, 'department') and user.department:
-            incoming_tickets = Ticket.objects.filter(department=user.department).order_by('-created_at')
-        else:
-            # Caso o usuário seja Administrador e não tenha departamento fixo no cadastro, 
-            # ele poderá ver os chamados de todos os setores como fallback.
+        if is_admin:
+            # Regra de Ouro do Admin: Visão global, ignora filtros de setor
             incoming_tickets = Ticket.objects.all().order_by('-created_at')
+            
+        elif is_agent_dept:
+            # Regra Departamental: Vê APENAS chamados roteados para o departamento do perfil dele
+            if hasattr(user, 'department') and user.department:
+                incoming_tickets = Ticket.objects.filter(department=user.department).order_by('-created_at')
+            else:
+                # Fallback de Segurança: Se o usuário estiver no grupo 'Financeiro' mas o 
+                # cadastro dele estiver sem um 'department' preenchido, ele não verá nada 
+                # para evitar vazamento de dados de outras áreas.
+                incoming_tickets = Ticket.objects.none()
 
-    # Preparando dados para o Modal de Categorização de 4 níveis
+    # 3. PREPARAÇÃO DO MODAL DE NOVA DEMANDA (CASCATA)
     departments = Department.objects.all()
     all_subjects = TicketSubject.objects.all()
     subjects_data = [{
@@ -52,7 +66,7 @@ def ticket_list(request):
     context = {
         'my_tickets': my_tickets,
         'incoming_tickets': incoming_tickets,
-        'is_agent': is_agent,  # Diz ao HTML se exibe a aba de tratamento do setor
+        'is_agent': is_agent, # Flag booleana que liga/desliga a Aba 2 no HTML
         'departments': departments,
         'subjects_json': json.dumps(subjects_data), 
     }
