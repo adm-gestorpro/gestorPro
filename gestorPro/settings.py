@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'vendas',
     'clientes',
     'fornecedores',
+    'tickets',
     'sslserver',
     'django_extensions',
 ]
