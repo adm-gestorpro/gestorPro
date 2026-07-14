@@ -235,6 +235,10 @@ class TicketSubject(models.Model):
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='subjects')
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subcategories')
 
+    class Meta:
+        verbose_name = "Assuntos"
+        verbose_name_plural = "Assuntos"
+
     def get_full_path(self):
         """Retorna o caminho completo da árvore (ex: Hardware > Impressoras > Toner)"""
         path = [self.name]
