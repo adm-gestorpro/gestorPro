@@ -256,67 +256,59 @@
             <form action="{% url 'ticket_create' %}" method="POST" class="p-4 md:p-5">
                 {% csrf_token %}
                 
-                <input type="hidden" name="subject_id" id="final_subject_id" value="" required>
+                <input type="hidden" name="subject_id" id="final_subject_id" value="">
 
-                <div class="grid gap-4 mb-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                <div class="grid gap-5 mb-4 grid-cols-1">
                     
-                    <div class="col-span-full">
+                    <div class="w-full">
                         <label for="title" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Título Resumido da Solicitação <span class="text-red-500">*</span></label>
                         <input type="text" name="title" id="title" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white" placeholder="Ex: Impressora do faturamento parou de puxar papel..." required>
                     </div>
 
-                    <div class="col-span-1 md:col-span-2">
-                        <label for="department" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Setor Responsável <span class="text-red-500">*</span></label>
-                        <select id="department" name="department" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white cascade-select" required>
-                            <option value="" selected disabled>Escolha o setor responsável...</option>
-                            {% for dept in departments %}
-                                <option value="{{ dept.id }}">{{ dept.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
+                    <div class="flex flex-col lg:flex-row gap-4 w-full">
+                        
+                        <div class="flex-1 min-w-[150px]">
+                            <label for="department" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Setor <span class="text-red-500">*</span></label>
+                            <select id="department" name="department" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white cascade-select" required>
+                                <option value="" selected disabled>Escolha o setor...</option>
+                                {% for dept in departments %}
+                                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-                    <div class="col-span-1 md:col-span-2">
-                        <label for="priority" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Urgência / Impacto <span class="text-red-500">*</span></label>
-                        <select id="priority" name="priority" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white" required>
-                            <option value="" selected disabled>Selecione a criticidade...</option>
-                            <option value="LOW">Baixa (Dúvidas/Melhorias)</option>
-                            <option value="MEDIUM">Média (Apenas eu com problema)</option>
-                            <option value="HIGH">Alta (Setor parcialmente parado)</option>
-                            <option value="CRITICAL">Crítica (Operação / Unidade Totalmente Parada)</option>
-                        </select>
-                    </div>
+                        <div id="container_l1" class="flex-1 min-w-[150px] hidden">
+                            <label for="subject_l1" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Categoria <span class="text-red-500">*</span></label>
+                            <select id="subject_l1" data-level="1" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white cascade-select">
+                                <option value="" selected disabled>Selecione...</option>
+                            </select>
+                        </div>
 
-                    <div id="container_l1" class="col-span-1 hidden">
-                        <label for="subject_l1" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Categoria <span class="text-red-500">*</span></label>
-                        <select id="subject_l1" data-level="1" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white cascade-select">
-                            <option value="" selected disabled>Selecione...</option>
-                        </select>
-                    </div>
+                        <div id="container_l2" class="flex-1 min-w-[150px] hidden">
+                            <label for="subject_l2" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Subcategoria <span class="text-red-500">*</span></label>
+                            <select id="subject_l2" data-level="2" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white cascade-select">
+                                <option value="" selected disabled>Selecione...</option>
+                            </select>
+                        </div>
 
-                    <div id="container_l2" class="col-span-1 hidden">
-                        <label for="subject_l2" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Subcategoria <span class="text-red-500">*</span></label>
-                        <select id="subject_l2" data-level="2" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white cascade-select">
-                            <option value="" selected disabled>Selecione...</option>
-                        </select>
-                    </div>
+                        <div id="container_l3" class="flex-1 min-w-[150px] hidden">
+                            <label for="subject_l3" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Item <span class="text-red-500">*</span></label>
+                            <select id="subject_l3" data-level="3" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white cascade-select">
+                                <option value="" selected disabled>Selecione...</option>
+                            </select>
+                        </div>
 
-                    <div id="container_l3" class="col-span-1 hidden">
-                        <label for="subject_l3" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Item <span class="text-red-500">*</span></label>
-                        <select id="subject_l3" data-level="3" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white cascade-select">
-                            <option value="" selected disabled>Selecione...</option>
-                        </select>
+                        <div id="container_l4" class="flex-1 min-w-[150px] hidden">
+                            <label for="subject_l4" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Detalhe <span class="text-red-500">*</span></label>
+                            <select id="subject_l4" data-level="4" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white cascade-select">
+                                <option value="" selected disabled>Selecione...</option>
+                            </select>
+                        </div>
                     </div>
-
-                    <div id="container_l4" class="col-span-1 hidden">
-                        <label for="subject_l4" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Detalhe <span class="text-red-500">*</span></label>
-                        <select id="subject_l4" data-level="4" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white cascade-select">
-                            <option value="" selected disabled>Selecione...</option>
-                        </select>
-                    </div>
-                    
-                    <div class="col-span-full">
+                   
+                    <div class="w-full">
                         <label for="description" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Descrição Completa da Situação <span class="text-red-500">*</span></label>
-                        <textarea id="description" name="description" rows="10" class="block p-2.5 w-full text-sm text-slate-900 bg-slate-50 rounded-lg border border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-white" placeholder="Relate logs de erros, passo a passo para reproduzir a falha ou o escopo do pedido..." required></textarea>
+                        <textarea id="description" name="description" rows="5" class="block p-2.5 w-full text-sm text-slate-900 bg-slate-50 rounded-lg border border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-white" placeholder="Relate logs de erros, passo a passo para reproduzir a falha ou o escopo do pedido..." required></textarea>
                     </div>
                 </div>
                 
@@ -366,7 +358,17 @@
         }
 
         // ----------------- CASCATA DE ATÉ 4 NÍVEIS -----------------
-        const subjects = JSON.parse(document.getElementById('subjects-data').textContent);
+        const subjectsDataEl = document.getElementById('subjects-data');
+        if (!subjectsDataEl) return;
+        
+        let subjects = [];
+        try {
+            subjects = JSON.parse(subjectsDataEl.textContent);
+        } catch (e) {
+            console.error("Erro ao ler JSON de assuntos.", e);
+            return;
+        }
+
         const finalSubjectInput = document.getElementById('final_subject_id');
         const deptSelect = document.getElementById('department');
         
@@ -378,17 +380,13 @@
             4: { select: document.getElementById('subject_l4'), container: document.getElementById('container_l4') },
         };
 
-        // Reseta e esconde select boxes a partir de um determinado nível
+        // Reseta, esconde e remove obrigatoriedade dos níveis subsequentes
         function clearAndHideFromLevel(startLevel) {
             for (let i = startLevel; i <= 4; i++) {
-                let select = document.getElementById('subject_l' + i);
-                let container = document.getElementById('container_l' + i);
-                
-                if (select) {
-                    // Remove opções anteriores
-                    select.innerHTML = '<option value="" selected disabled>Selecione...</option>';
-                    // Esconde o campo para o usuário não se confundir
-                    container.classList.add('hidden');
+                if (levels[i] && levels[i].select) {
+                    levels[i].select.innerHTML = '<option value="" selected disabled>Selecione...</option>';
+                    levels[i].select.required = false; // Permite envio do formulário sem travar nos níveis ocultos
+                    levels[i].container.classList.add('hidden');
                 }
             }
         }
@@ -405,8 +403,9 @@
                     opt.textContent = item.name;
                     selectElement.appendChild(opt);
                 });
-                selectElement.required = true;
-                containerElement.classList.remove('hidden');
+                
+                selectElement.required = true; // Se a caixa apareceu, o preenchimento se torna obrigatório
+                containerElement.classList.remove('hidden'); // Exibe lado a lado na linha flex
                 
                 // Força o reset do input final já que o usuário obrigatoriamente deve selecionar o nível abaixo
                 finalSubjectInput.value = ''; 
@@ -415,12 +414,12 @@
 
         // Evento 0: Mudança de Setor
         deptSelect.addEventListener('change', function() {
-            const deptId = parseInt(this.value);
+            const deptId = this.value;
             clearAndHideFromLevel(1);
             finalSubjectInput.value = '';
 
             // Busca as categorias raiz (L1) deste departamento (as quais possuem parent_id igual a null)
-            const roots = subjects.filter(s => s.department_id === deptId && s.parent_id === null);
+            const roots = subjects.filter(s => s.department_id == deptId && (s.parent_id === null || s.parent_id === ''));
             populateLevel(1, roots);
         });
 
@@ -432,7 +431,7 @@
                 // Ignora mudanças feitas no seletor de Setores (ele é tratado acima)
                 if (!currentLevel) return;
 
-                const selectedId = parseInt(this.value);
+                const selectedId = this.value;
                 
                 // Assume temporariamente o ID corrente como o assunto selecionado
                 finalSubjectInput.value = selectedId;
@@ -443,7 +442,7 @@
 
                 // Se houver um próximo nível no layout, filtra se existem nós filhos associados
                 if (nextLevel <= 4) {
-                    const children = subjects.filter(s => s.parent_id === selectedId);
+                    const children = subjects.filter(s => s.parent_id == selectedId);
                     populateLevel(nextLevel, children);
                 }
             });
