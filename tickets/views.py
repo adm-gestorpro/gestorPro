@@ -1,20 +1,5 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-
-
-import json
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from .models import Ticket, Department, TicketSubject
-
-import json
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-from .models import Ticket, Department, TicketSubject
-
-import json
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
 from .models import Ticket, Department, TicketSubject
 
 @login_required
@@ -66,9 +51,9 @@ def ticket_list(request):
     context = {
         'my_tickets': my_tickets,
         'incoming_tickets': incoming_tickets,
-        'is_agent': is_agent, # Flag booleana que liga/desliga a Aba 2 no HTML
+        'is_agent': is_agent, 
         'departments': departments,
-        'subjects_json': json.dumps(subjects_data), 
+        'subjects_json': subjects_data, # <--- ENVIE A LISTA PURA DO PYTHON
     }
     return render(request, 'ticket_list.html', context)
 

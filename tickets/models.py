@@ -77,6 +77,7 @@ class Ticket(models.Model):
     ]
 
     PRIORITY_CHOICES = [
+        ('NOT_SET', 'A definir'),
         ('LOW', 'Baixa'),
         ('MEDIUM', 'Média'),
         ('HIGH', 'Alta'),
@@ -116,9 +117,12 @@ class Ticket(models.Model):
         verbose_name="Status"
     )
     priority = models.CharField(
-        max_length=10, 
+        max_length=20,
+        default='NOT_SET',
         choices=PRIORITY_CHOICES, 
-        verbose_name="Prioridade"
+        verbose_name="Prioridade",
+        null=True,
+        blank=True
     )
     
     # Timestamps
