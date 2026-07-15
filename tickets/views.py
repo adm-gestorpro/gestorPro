@@ -1,4 +1,5 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .models import Ticket, Department, TicketSubject
 
@@ -59,4 +60,43 @@ def ticket_list(request):
 
 @login_required
 def ticket_create(request):
-    return render(request, 'ticket_list.html')
+    if request.method == 'POST':
+        # 1. Captura os dados enviados pelo formulário HTML
+        title = request.POST.get('title')
+        department_id = request.POST.get('department')
+        subject_id = request.POST.get('subject_id') # Este é o ID oculto gerado pela nossa cascata
+        description = request.POST.get('description')
+
+        # 2. Validação de Segurança Básica
+        if not title or not department_id or not subject_id or not description:
+            messages.error(request, "Por favor, preencha todos os campos obrigatórios da árvore de assunto.")
+            return redirect('ticket_list')
+
+        try:
+            # Busca as instâncias do banco de dados
+            department = Department.objects.get(id=department_id)
+            subject = TicketSubject.objects.get(id=subject_id)
+
+            # 3. Cria o chamado no banco de dados
+            Ticket.objects.create(
+                title=title,
+                description=description,
+                department=department,
+                subject_id=subject.id,
+                requester=request.user,  # Quem abriu o chamado
+                status='OPEN',           # Status inicial padrão
+                priority='NOT_SET'       # Como removemos a urgência do usuário, definimos um padrão
+            )
+            
+            # Mensagem de sucesso (aparecerá naquele banner superior do seu base.html)
+            messages.success(request, "Chamado aberto e encaminhado com sucesso!")
+            
+        except Department.DoesNotExist:
+            messages.error(request, "O setor selecionado é inválido.")
+        except TicketSubject.DoesNotExist:
+            messages.error(request, "O assunto selecionado é inválido.")
+        except Exception as e:
+            messages.error(request, f"Ocorreu um erro ao processar sua solicitação: {str(e)}")
+
+    # Independente de dar certo ou errado, devolve o usuário para a tela de chamados
+    return redirect('ticket_list')

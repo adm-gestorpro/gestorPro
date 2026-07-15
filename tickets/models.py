@@ -152,6 +152,15 @@ class Ticket(models.Model):
         verbose_name="Estourou SLA de Resolução"
     )
 
+    subject = models.ForeignKey(
+        'TicketSubject',
+        on_delete=models.PROTECT,
+        null=True, 
+        blank=True,
+        related_name='tickets',
+        verbose_name="Assunto/Categoria"
+    )
+
     class Meta:
         verbose_name = "Ticket"
         verbose_name_plural = "Tickets"
