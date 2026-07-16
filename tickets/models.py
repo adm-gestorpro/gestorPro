@@ -247,7 +247,7 @@ class TicketComment(models.Model):
 
 class TicketSubject(models.Model):
     name = models.CharField(max_length=100)
-    department = models.ManyToManyField(Department, on_delete=models.CASCADE, related_name='subjects')
+    department = models.ManyToManyField('Department', related_name='subjects')
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subcategories')
 
     class Meta:
