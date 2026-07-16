@@ -16,7 +16,7 @@ def ticket_list(request):
     
     # Liste aqui os nomes EXATOS dos grupos que resolvem chamados no seu sistema
     grupos_departamentais = [
-        'Departamento Pessoal', 'Suporte', 'Financeiro', 'Contábil', 'TI', 'Manutenção'
+        'Departamento Pessoal', 'Suporte', 'Financeiro', 'Contábil', 'Suporte', 'Comprador', 'Diretoria'
     ]
     is_agent_dept = user.groups.filter(name__in=grupos_departamentais).exists()
     
@@ -30,13 +30,20 @@ def ticket_list(request):
             incoming_tickets = Ticket.objects.all().order_by('-created_at')
             
         elif is_agent_dept:
-            # Regra Departamental: Vê APENAS chamados roteados para o departamento do perfil dele
-            if hasattr(user, 'department') and user.department:
-                incoming_tickets = Ticket.objects.filter(department=user.department).order_by('-created_at')
+            # 1. Pega o nome do grupo do usuário (ex: 'Departamento Pessoal')
+            # Filtramos pelos grupos que o usuário tem E que estão na nossa lista permitida
+            user_group = user.groups.filter(name__in=grupos_departamentais).first()
+            
+            if user_group:
+                # 2. Busca o Departamento no banco cujo nome seja igual ao nome do grupo
+                # Isso elimina a necessidade de um campo 'department' no objeto User
+                dept = Department.objects.filter(name=user_group.name).first()
+                
+                if dept:
+                    incoming_tickets = Ticket.objects.filter(department=dept).order_by('-created_at')
+                else:
+                    incoming_tickets = Ticket.objects.none()
             else:
-                # Fallback de Segurança: Se o usuário estiver no grupo 'Financeiro' mas o 
-                # cadastro dele estiver sem um 'department' preenchido, ele não verá nada 
-                # para evitar vazamento de dados de outras áreas.
                 incoming_tickets = Ticket.objects.none()
 
     # 3. PREPARAÇÃO DO MODAL DE NOVA DEMANDA (CASCATA)
