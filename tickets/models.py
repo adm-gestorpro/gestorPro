@@ -225,6 +225,8 @@ class TicketComment(models.Model):
         verbose_name="Autor"
     )
     message = models.TextField(verbose_name="Mensagem")
+
+    text = models.TextField(verbose_name="Mensagem")
     
     is_internal = models.BooleanField(
         default=False,
