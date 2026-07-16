@@ -11,33 +11,42 @@ def ticket_list(request):
     my_tickets = Ticket.objects.filter(requester=user).order_by('-created_at')
     
     # 2. CONTROLE DE ACESSO (RBAC) E FILAS DE ATENDIMENTO
-    # Usamos '__icontains' para abranger variações de digitação (ex: Administrador, administradores)
     is_admin = user.groups.filter(name__icontains='administrador').exists()
     
-    # Liste aqui os nomes EXATOS dos grupos que resolvem chamados no seu sistema
+    # Lista limpa de grupos departamentais (removido duplicidade de 'Suporte')
     grupos_departamentais = [
-        'Departamento Pessoal', 'Suporte', 'Financeiro', 'Contábil', 'Suporte', 'Comprador', 'Diretoria'
+        'Departamento Pessoal', 'Suporte', 'Financeiro', 'Contábil', 'Comprador', 'Diretoria'
     ]
     is_agent_dept = user.groups.filter(name__in=grupos_departamentais).exists()
     
-    # A aba de "Fila de Atendimento" só aparece se ele for Admin ou de um dos grupos acima
     is_agent = is_admin or is_agent_dept
+    
+    # -------------------------------------------------------------------------
+    # MAPEAMENTO DE NOMES (Grupo do Usuário -> Nome do Setor no Banco)
+    # Sempre que houver uma divergência de nomes, basta adicionar a regra aqui!
+    # -------------------------------------------------------------------------
+    grupo_para_departamento = {
+        'Comprador': 'Compras',  # Traduz o grupo 'Comprador' para o setor 'Compras'
+        # 'Diretoria': 'Conselho Administrativo', <-- Exemplo de mapeamentos futuros
+    }
     
     incoming_tickets = []
     if is_agent:
         if is_admin:
-            # Regra de Ouro do Admin: Visão global, ignora filtros de setor
+            # Regra de Ouro do Admin: Visão global
             incoming_tickets = Ticket.objects.all().order_by('-created_at')
             
         elif is_agent_dept:
-            # 1. Pega o nome do grupo do usuário (ex: 'Departamento Pessoal')
-            # Filtramos pelos grupos que o usuário tem E que estão na nossa lista permitida
+            # Pega o primeiro grupo compatível que o usuário possui
             user_group = user.groups.filter(name__in=grupos_departamentais).first()
             
             if user_group:
-                # 2. Busca o Departamento no banco cujo nome seja igual ao nome do grupo
-                # Isso elimina a necessidade de um campo 'department' no objeto User
-                dept = Department.objects.filter(name=user_group.name).first()
+                # Se o nome do grupo existir no nosso "tradutor", usamos a tradução.
+                # Caso contrário, usamos o próprio nome do grupo como fallback (padrão)
+                nome_busca_setor = grupo_para_departamento.get(user_group.name, user_group.name)
+                
+                # Faz a busca utilizando o nome traduzido
+                dept = Department.objects.filter(name=nome_busca_setor).first()
                 
                 if dept:
                     incoming_tickets = Ticket.objects.filter(department=dept).order_by('-created_at')
@@ -54,20 +63,18 @@ def ticket_list(request):
             'id': s.id,
             'name': s.name,
             'parent_id': s.parent_id if s.parent_id else None,
-            # Aqui está a chave: uma lista de IDs de departamentos associados
             'department_ids': list(s.department.values_list('id', flat=True))
         })
         
     context = {
-        'subjects_json': subjects_data,
         'my_tickets': my_tickets,
         'incoming_tickets': incoming_tickets,
         'is_agent': is_agent, 
         'departments': departments,
-        'subjects_json': subjects_data, # <--- ENVIE A LISTA PURA DO PYTHON
+        'subjects_json': subjects_data,  # Enviado uma única vez de forma limpa
     }
     return render(request, 'ticket_list.html', context)
-
+    
 @login_required
 def ticket_create(request):
     if request.method == 'POST':
