@@ -40,7 +40,7 @@
             </div>
 
             {% if ticket.status != 'CLOSED' %}
-                {% if is_agent %}
+                {% if is_requester or is_agent %}
                 <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm border-l-4 border-l-primary-500">
                     <form action="{% url 'ticket_detail' ticket.id %}" method="POST">
                         {% csrf_token %}
