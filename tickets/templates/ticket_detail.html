@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Chamado #{{ ticket.id }} - GestorPro{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    
+    <div class="mb-6">
+        <a href="{% url 'ticket_list' %}" class="text-sm text-primary-600 hover:underline mb-2 inline-block">
+            <i class="fa-solid fa-arrow-left mr-1"></i> Voltar para Lista
+        </a>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900 dark:text-white">
+                    #{{ ticket.id }} - {{ ticket.title }}
+                </h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    Aberto por <strong>{{ ticket.requester.get_full_name|default:ticket.requester.username }}</strong> em {{ ticket.created_at|date:"d/m/Y H:i" }}
+                </p>
+            </div>
+            <div>
+                <span class="px-3 py-1.5 rounded-full text-sm font-semibold border
+                    {% if ticket.status == 'OPEN' %} bg-blue-50 text-blue-700 border-blue-200 
+                    {% elif ticket.status == 'IN_PROGRESS' %} bg-amber-50 text-amber-700 border-amber-200 
+                    {% elif ticket.status == 'RESOLVED' %} bg-emerald-50 text-emerald-700 border-emerald-200 
+                    {% else %} bg-slate-100 text-slate-700 border-slate-200 {% endif %}">
+                    {{ ticket.get_status_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <div class="lg:col-span-2 space-y-6">
+            
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 border-b pb-2">Descrição Inicial do Problema</h3>
+                <div class="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{{ ticket.description }}</div>
+            </div>
+
+            {% if ticket.status != 'CLOSED' %}
+                {% if is_agent %}
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm border-l-4 border-l-primary-500">
+                    <form action="{% url 'ticket_detail' ticket.id %}" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="add_comment">
+                        <label for="text" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Adicionar Atualização ao Histórico Público</label>
+                        <textarea name="text" rows="3" class="block p-2.5 w-full text-sm text-slate-900 bg-slate-50 rounded-lg border border-slate-300 focus:ring-primary-500 focus:border-primary-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white" placeholder="Escreva o andamento técnico aqui. O solicitante lerá esta mensagem..." required></textarea>
+                        <div class="flex justify-end mt-3">
+                            <button type="submit" class="text-white bg-primary-600 hover:bg-primary-700 font-medium rounded-lg text-sm px-5 py-2.5 flex items-center gap-2 transition-colors shadow-sm">
+                                <i class="fa-solid fa-reply"></i> Registrar Resposta
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                {% else %}
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 text-center border border-slate-200 dark:border-slate-700">
+                    <div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 mb-2">
+                        <i class="fa-solid fa-eye"></i>
+                    </div>
+                    <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Modo de Acompanhamento</h4>
+                    <p class="text-xs text-slate-500 mt-1">Sua solicitação está sob análise. A equipe técnica adicionará atualizações no histórico abaixo.</p>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="bg-slate-100 dark:bg-slate-800 rounded-xl p-4 text-center text-slate-500 text-sm border border-slate-200 dark:border-slate-700">
+                    <i class="fa-solid fa-lock mr-2"></i> Chamado fechado. Nenhuma alteração é permitida.
+                </div>
+            {% endif %}
+
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-6 border-b pb-2">Histórico de Atendimento</h3>
+                
+                <div class="space-y-6">
+                    {% for comment in public_comments %}
+                        <div class="flex {% if comment.author == ticket.requester %}justify-start{% else %}justify-end{% endif %}">
+                            
+                            <div class="flex flex-col {% if comment.author == ticket.requester %}items-start{% else %}items-end{% endif %} max-w-[85%]">
+                                
+                                <div class="flex items-baseline gap-2 mb-1 px-1">
+                                    {% if comment.author != ticket.requester %}
+                                        <span class="text-xs font-semibold text-primary-600 dark:text-primary-400">
+                                            {{ comment.author.get_full_name|default:comment.author.username }}
+                                        </span>
+                                        <span class="text-[10px] text-slate-400">{{ comment.created_at|date:"d/m H:i" }}</span>
+                                    {% else %}
+                                        <span class="text-[10px] text-slate-400">{{ comment.created_at|date:"d/m H:i" }}</span>
+                                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                            {{ comment.author.get_full_name|default:comment.author.username }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="px-4 py-3 rounded-2xl text-sm shadow-sm whitespace-pre-wrap 
+                                    {% if comment.author == ticket.requester %}
+                                        bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 rounded-bl-none border border-slate-200 dark:border-slate-700
+                                    {% else %}
+                                        bg-primary-600 text-white rounded-br-none shadow-primary-200 dark:shadow-none
+                                    {% endif %}">
+                                    {{ comment.text }}
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="text-center text-slate-500 text-sm py-8">Nenhum andamento registrado ainda.</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+
+        <div class="space-y-6">
+            
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 border-b pb-2">Detalhes</h3>
+                <ul class="space-y-4 text-sm">
+                    <li><span class="block text-xs text-slate-500 mb-1">Setor Responsável</span><span class="font-medium text-slate-900 dark:text-white">{{ ticket.department.name }}</span></li>
+                    <li><span class="block text-xs text-slate-500 mb-1">Assunto</span><span class="font-medium text-slate-900 dark:text-white">{{ ticket.subject.get_full_path|default:ticket.subject.name }}</span></li>
+                    <li>
+                        <span class="block text-xs text-slate-500 mb-1">Atendente</span>
+                        {% if ticket.assignee %}
+                            <span class="font-medium text-primary-700">{{ ticket.assignee.get_full_name|default:ticket.assignee.username }}</span>
+                        {% else %}
+                            <span class="text-slate-400 italic">Aguardando...</span>
+                        {% endif %}
+                    </li>
+                </ul>
+            </div>
+
+            {% if is_agent and ticket.status != 'CLOSED' %}
+            <div class="bg-primary-50 dark:bg-slate-800 border border-primary-100 dark:border-slate-700 rounded-xl p-6 shadow-sm">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-primary-800 dark:text-primary-400 mb-4 border-b border-primary-200 dark:border-slate-600 pb-2">Gestão de Atendimento</h3>
+                {% if not ticket.assignee %}
+                <form action="{% url 'ticket_detail' ticket.id %}" method="POST" class="mb-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="take_ticket">
+                    <button type="submit" class="w-full text-primary-700 bg-white border border-primary-300 hover:bg-primary-100 font-medium rounded-lg text-sm px-5 py-2.5 transition-colors">
+                        <i class="fa-solid fa-hand-sparkles mr-2"></i> Assumir Chamado
+                    </button>
+                </form>
+                {% endif %}
+                <form action="{% url 'ticket_detail' ticket.id %}" method="POST" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_ticket">
+                    <div>
+                        <label class="block mb-1 text-sm font-semibold">Status</label>
+                        <select name="status" class="bg-white border border-slate-300 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-900 dark:border-slate-600">
+                            <option value="OPEN" {% if ticket.status == 'OPEN' %}selected{% endif %}>Aberto</option>
+                            <option value="IN_PROGRESS" {% if ticket.status == 'IN_PROGRESS' %}selected{% endif %}>Em Atendimento</option>
+                            <option value="PAUSED" {% if ticket.status == 'PAUSED' %}selected{% endif %}>Pausado</option>
+                            <option value="RESOLVED" {% if ticket.status == 'RESOLVED' %}selected{% endif %}>Resolvido</option>
+                            <option value="CLOSED" {% if ticket.status == 'CLOSED' %}selected{% endif %}>Fechado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-semibold">Prioridade</label>
+                        <select name="priority" class="bg-white border border-slate-300 text-sm rounded-lg block w-full p-2.5 dark:bg-slate-900 dark:border-slate-600">
+                            <option value="NOT_SET" {% if ticket.priority == 'NOT_SET' %}selected{% endif %}>A definir</option>
+                            <option value="LOW" {% if ticket.priority == 'LOW' %}selected{% endif %}>Baixa</option>
+                            <option value="MEDIUM" {% if ticket.priority == 'MEDIUM' %}selected{% endif %}>Média</option>
+                            <option value="HIGH" {% if ticket.priority == 'HIGH' %}selected{% endif %}>Alta</option>
+                            <option value="CRITICAL" {% if ticket.priority == 'CRITICAL' %}selected{% endif %}>Crítica</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full text-white bg-slate-800 hover:bg-slate-900 font-medium rounded-lg text-sm px-5 py-2.5 transition-colors">Atualizar</button>
+                </form>
+            </div>
+            {% endif %}
+
+            {% if is_agent %}
+            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl p-6 shadow-sm">
+                <div class="flex items-center gap-2 mb-4 border-b border-amber-200 dark:border-amber-800/50 pb-2">
+                    <i class="fa-solid fa-lock text-amber-600 dark:text-amber-500"></i>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400">Anotações Internas</h3>
+                </div>
+                
+                {% if ticket.status != 'CLOSED' %}
+                <form action="{% url 'ticket_detail' ticket.id %}" method="POST" class="mb-6">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_internal_note">
+                    <textarea name="text" rows="2" class="block p-2 w-full text-sm bg-white rounded border border-amber-300 focus:ring-amber-500 focus:border-amber-500 dark:bg-slate-800 dark:border-amber-700 dark:text-white" placeholder="Escreva uma nota sigilosa..." required></textarea>
+                    <button type="submit" class="mt-2 w-full text-amber-900 bg-amber-200 hover:bg-amber-300 font-medium rounded text-xs px-3 py-1.5 transition-colors">
+                        Adicionar Nota
+                    </button>
+                </form>
+                {% endif %}
+
+                <div class="space-y-4">
+                    {% for note in internal_notes %}
+                        <div class="bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-700/50 p-3 rounded shadow-sm text-sm">
+                            
+                            <div id="note-display-{{ note.id }}">
+                                <div class="flex justify-between items-start mb-1 text-xs text-amber-700 dark:text-amber-500">
+                                    <span class="font-bold">{{ note.author.username }}</span>
+                                    <span>{{ note.created_at|date:"d/m H:i" }}</span>
+                                </div>
+                                <div class="text-slate-800 dark:text-slate-200 whitespace-pre-wrap mb-2">{{ note.text }}</div>
+                                
+                                {% if ticket.status != 'CLOSED' %}
+                                <div class="flex gap-3 text-xs border-t border-amber-100 dark:border-slate-700 pt-2 mt-2">
+                                    <button type="button" onclick="toggleEditNote({{ note.id }})" class="text-slate-500 hover:text-blue-600 font-medium">Editar</button>
+                                    <form action="{% url 'ticket_detail' ticket.id %}" method="POST" class="inline" onsubmit="return confirm('Excluir esta nota internamente?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="delete_internal_note">
+                                        <input type="hidden" name="note_id" value="{{ note.id }}">
+                                        <button type="submit" class="text-slate-500 hover:text-red-600 font-medium">Excluir</button>
+                                    </form>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div id="note-edit-{{ note.id }}" class="hidden">
+                                <form action="{% url 'ticket_detail' ticket.id %}" method="POST">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="edit_internal_note">
+                                    <input type="hidden" name="note_id" value="{{ note.id }}">
+                                    <textarea name="text" rows="2" class="block p-2 w-full text-sm bg-slate-50 rounded border border-amber-300 focus:ring-amber-500 dark:bg-slate-900" required>{{ note.text }}</textarea>
+                                    <div class="flex gap-2 mt-2">
+                                        <button type="button" onclick="toggleEditNote({{ note.id }})" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded text-xs py-1.5 transition-colors">Cancelar</button>
+                                        <button type="submit" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-xs py-1.5 transition-colors">Salvar</button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                        </div>
+                    {% empty %}
+                        <div class="text-xs text-amber-700/60 dark:text-amber-500/60 text-center italic">Nenhuma anotação interna registrada.</div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Função simples para alternar entre o modo de "leitura" e o "modo edição" na Nota Interna
+    function toggleEditNote(noteId) {
+        const displayDiv = document.getElementById('note-display-' + noteId);
+        const editDiv = document.getElementById('note-edit-' + noteId);
+        
+        if (displayDiv.classList.contains('hidden')) {
+            displayDiv.classList.remove('hidden');
+            editDiv.classList.add('hidden');
+        } else {
+            displayDiv.classList.add('hidden');
+            editDiv.classList.remove('hidden');
+        }
+    }
+</script>
+{% endblock %}
+
+{% endblock %}

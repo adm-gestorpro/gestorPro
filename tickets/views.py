@@ -1,7 +1,7 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .models import Ticket, Department, TicketSubject
+from .models import Ticket, Department, TicketSubject, TicketComment
 
 @login_required
 def ticket_list(request):
@@ -100,3 +100,101 @@ def ticket_create(request):
 
     # Independente de dar certo ou errado, devolve o usuário para a tela de chamados
     return redirect('ticket_list')
+
+
+@login_required
+def ticket_detail(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    user = request.user
+
+    # 1. VALIDAÇÃO DE PERMISSÃO
+    is_requester = (ticket.requester == user)
+    is_admin = user.groups.filter(name__icontains='administrador').exists()
+    grupos_departamentais = ['Departamento Pessoal', 'Suporte', 'Financeiro', 'Contábil', 'TI', 'Manutenção']
+    is_agent_dept = user.groups.filter(name__in=grupos_departamentais).exists()
+    
+    is_agent = is_admin or is_agent_dept
+
+    if not (is_requester or is_agent):
+        messages.error(request, "Você não tem permissão para visualizar este chamado.")
+        return redirect('ticket_list')
+
+    # 2. PROCESSAMENTO DE AÇÕES (POST)
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        # --- BLOQUEIO DE SEGURANÇA: Ações exclusivas para Agentes ---
+        # Lista de ações que SOMENTE agentes podem realizar
+        acoes_agente = [
+            'add_internal_note', 'edit_internal_note', 'delete_internal_note', 
+            'take_ticket', 'update_ticket'
+        ]
+        
+        if action in acoes_agente and not is_agent:
+            messages.error(request, "Você não tem permissão para realizar esta ação de gestão.")
+            return redirect('ticket_detail', ticket_id=ticket.id)
+
+        # Se o chamado estiver fechado, ninguém (exceto admins para reabrir) pode falar
+        if ticket.status == 'CLOSED' and action == 'add_comment':
+            messages.warning(request, "Chamado finalizado, não é possível responder.")
+            return redirect('ticket_detail', ticket_id=ticket.id)
+
+        # --- PROCESSAMENTO SEGURO ---
+        if action == 'add_comment':
+            text = request.POST.get('text')
+            if text:
+                TicketComment.objects.create(ticket=ticket, author=user, text=text, is_internal=False)
+                # Opcional: Se for agente respondendo, pode alterar status automaticamente
+                if is_agent and ticket.status == 'OPEN':
+                    ticket.status = 'IN_PROGRESS'
+                    ticket.save()
+                messages.success(request, "Mensagem enviada.")
+
+        elif action == 'add_internal_note' and is_agent:
+            text = request.POST.get('text')
+            if text:
+                TicketComment.objects.create(ticket=ticket, author=user, text=text, is_internal=True)
+                messages.success(request, "Nota interna salva.")
+
+        elif action == 'edit_internal_note' and is_agent:
+            note_id = request.POST.get('note_id')
+            new_text = request.POST.get('text')
+            note = get_object_or_404(TicketComment, id=note_id, ticket=ticket, is_internal=True)
+            note.text = new_text
+            note.save()
+
+        elif action == 'delete_internal_note' and is_agent:
+            note_id = request.POST.get('note_id')
+            note = get_object_or_404(TicketComment, id=note_id, ticket=ticket, is_internal=True)
+            note.delete()
+
+        elif action == 'take_ticket' and is_agent:
+            ticket.assignee = user
+            ticket.status = 'IN_PROGRESS'
+            ticket.save()
+
+        elif action == 'update_ticket' and is_agent:
+            # Lógica de atualização de status/prioridade...
+            new_status = request.POST.get('status')
+            new_priority = request.POST.get('priority')
+            if new_status: ticket.status = new_status
+            if new_priority: ticket.priority = new_priority
+            ticket.save()
+
+        return redirect('ticket_detail', ticket_id=ticket.id)
+
+    # 3. SEPARAÇÃO E ORDENAÇÃO DE MENSAGENS
+    # order_by('-created_at') traz da MAIS RECENTE para a MAIS ANTIGA
+    public_comments = ticket.comments.filter(is_internal=False).order_by('-created_at')
+    
+    # Solicitantes NUNCA carregam as notas internas no banco
+    internal_notes = ticket.comments.filter(is_internal=True).order_by('-created_at') if is_agent else []
+
+    context = {
+        'ticket': ticket,
+        'public_comments': public_comments,
+        'internal_notes': internal_notes,
+        'is_agent': is_agent,
+        'is_requester': is_requester
+    }
+    return render(request, 'ticket_detail.html', context)
