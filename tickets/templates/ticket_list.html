@@ -265,11 +265,22 @@
                         <input type="text" name="title" id="title" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white" placeholder="Ex: Impressora do faturamento parou de puxar papel..." required>
                     </div>
 
+                    <div class="w-full">
+                        <label for="ticket_type" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Tipo de Chamado <span class="text-red-500">*</span></label>
+                        <select name="ticket_type" id="ticket_type" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white" required>
+                            <option value="" selected disabled>Primeiro, classifique o tipo da sua necessidade...</option>
+                            <option value="INCIDENT">Defeito / Incidente (Algo parou de funcionar)</option>
+                            <option value="REQUEST">Solicitação (Acesso, serviço, material)</option>
+                            <option value="DOUBT">Dúvida / Informação</option>
+                            <option value="PROJECT">Melhoria / Novo Projeto</option>
+                        </select>
+                    </div>
+
                     <div class="flex flex-col lg:flex-row gap-4 w-full">
                         
                         <div class="flex-1 min-w-[150px]">
-                            <label for="department" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Setor <span class="text-red-500">*</span></label>
-                            <select id="department" name="department" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white cascade-select" required>
+                            <label for="department" class="block mb-2 text-sm font-semibold text-slate-900 dark:text-white">Setor Destino <span class="text-red-500">*</span></label>
+                            <select id="department" name="department" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:text-white cascade-select disabled:opacity-50 disabled:cursor-not-allowed" required disabled>
                                 <option value="" selected disabled>Escolha o setor...</option>
                                 {% for dept in departments %}
                                     <option value="{{ dept.id }}">{{ dept.name }}</option>
@@ -370,6 +381,7 @@
         }
 
         const finalSubjectInput = document.getElementById('final_subject_id');
+        const ticketTypeSelect = document.getElementById('ticket_type');
         const deptSelect = document.getElementById('department');
         
         // Mapeamento dos níveis L1 a L4 para simplificação do loop de manipulação de DOM
@@ -412,18 +424,31 @@
             }
         }
 
+        // Evento EXTRA: Controle do Fluxo Sequencial (Tipo de Chamado -> Setor)
+        if (ticketTypeSelect && deptSelect) {
+            ticketTypeSelect.addEventListener('change', function() {
+                if (this.value) {
+                    // Libera a seleção de Setores
+                    deptSelect.disabled = false;
+                } else {
+                    // Bloqueia e limpa tudo se o tipo for resetado
+                    deptSelect.disabled = true;
+                    deptSelect.value = '';
+                    clearAndHideFromLevel(1);
+                    finalSubjectInput.value = '';
+                }
+            });
+        }
+
         // Evento 0: Mudança de Setor
         deptSelect.addEventListener('change', function() {
-            const deptId = parseInt(this.value); // Garante que seja número
+            const deptId = this.value;
             clearAndHideFromLevel(1);
             finalSubjectInput.value = '';
 
-            // Filtra as categorias raiz que contêm o departamento selecionado na lista
-            const roots = subjects.filter(s => 
-                s.parent_id === null && 
-                s.department_ids.includes(deptId)
-            );
-            
+            // Busca as categorias raiz (L1) deste departamento (as quais possuem parent_id igual a null)
+            // Corrigido para verificar se deptId (inteiro) existe na lista s.department_ids (ManyToManyField)
+            const roots = subjects.filter(s => s.department_ids && s.department_ids.includes(parseInt(deptId)) && (s.parent_id === null || s.parent_id === ''));
             populateLevel(1, roots);
         });
 

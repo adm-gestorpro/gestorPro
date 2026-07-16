@@ -84,6 +84,13 @@ class Ticket(models.Model):
         ('CRITICAL', 'Crítica'),
     ]
 
+    TYPE_CHOICES = [
+        ('INCIDENT', 'Defeito / Incidente (Algo parou de funcionar)'),
+        ('REQUEST', 'Solicitação (Acesso, serviço, material)'),
+        ('DOUBT', 'Dúvida / Informação'),
+        ('PROJECT', 'Melhoria / Novo Projeto'),
+    ]
+
     title = models.CharField(max_length=200, verbose_name="Título/Assunto")
     description = models.TextField(verbose_name="Descrição da Demanda")
     
@@ -159,6 +166,13 @@ class Ticket(models.Model):
         blank=True,
         related_name='tickets',
         verbose_name="Assunto/Categoria"
+    )
+
+    ticket_type = models.CharField(
+        max_length=20,
+        choices=TYPE_CHOICES,
+        default='REQUEST',
+        verbose_name="Tipo de Chamado"
     )
 
     class Meta:
