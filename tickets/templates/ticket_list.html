@@ -414,12 +414,16 @@
 
         // Evento 0: Mudança de Setor
         deptSelect.addEventListener('change', function() {
-            const deptId = this.value;
+            const deptId = parseInt(this.value); // Garante que seja número
             clearAndHideFromLevel(1);
             finalSubjectInput.value = '';
 
-            // Busca as categorias raiz (L1) deste departamento (as quais possuem parent_id igual a null)
-            const roots = subjects.filter(s => s.department_id == deptId && (s.parent_id === null || s.parent_id === ''));
+            // Filtra as categorias raiz que contêm o departamento selecionado na lista
+            const roots = subjects.filter(s => 
+                s.parent_id === null && 
+                s.department_ids.includes(deptId)
+            );
+            
             populateLevel(1, roots);
         });
 

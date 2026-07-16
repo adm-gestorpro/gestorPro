@@ -42,14 +42,18 @@ def ticket_list(request):
     # 3. PREPARAÇÃO DO MODAL DE NOVA DEMANDA (CASCATA)
     departments = Department.objects.all()
     all_subjects = TicketSubject.objects.all()
-    subjects_data = [{
-        'id': s.id,
-        'name': s.name,
-        'department_id': s.department_id,
-        'parent_id': s.parent_id
-    } for s in all_subjects]
+    subjects_data = []
+    for s in Subject.objects.all():
+        subjects_data.append({
+            'id': s.id,
+            'name': s.name,
+            'parent_id': s.parent_id if s.parent_id else None,
+            # Aqui está a chave: uma lista de IDs de departamentos associados
+            'department_ids': list(s.departments.values_list('id', flat=True)) 
+        })
         
     context = {
+        'subjects_json': subjects_data,
         'my_tickets': my_tickets,
         'incoming_tickets': incoming_tickets,
         'is_agent': is_agent, 
