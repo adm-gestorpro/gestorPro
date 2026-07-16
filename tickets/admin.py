@@ -15,11 +15,20 @@ class DepartmentAdmin(admin.ModelAdmin):
 
 @admin.register(TicketSubject)
 class TicketSubjectAdmin(admin.ModelAdmin):
-    # Facilita ver quem é filho de quem
-    list_display = ('name', 'department', 'parent')
+    # 1. Trocamos 'department' por 'get_departments' (a função que criaremos abaixo)
+    list_display = ('name', 'get_departments', 'parent')
     
-    # Filtros úteis para encontrar categorias rapidamente
-    list_filter = ('department', 'parent')
+    # 2. No list_filter, você pode manter 'department' (ou 'departments') 
+    # pois o Django Admin sabe lidar com M2M para filtros automaticamente.
+    list_filter = ('department', 'parent') 
     
     # Busca por nome
     search_fields = ('name',)
+
+    # Função para exibir os departamentos de forma legível
+    def get_departments(self, obj):
+        # Pega todos os nomes dos departamentos relacionados e une com vírgula
+        return ", ".join([dept.name for dept in obj.department.all()])
+    
+    # Define o título da coluna na tabela do Admin
+    get_departments.short_description = 'Departamentos'
