@@ -71,14 +71,15 @@ def ticket_list(request):
 @login_required
 def ticket_create(request):
     if request.method == 'POST':
-        # 1. Captura os dados enviados pelo formulário HTML
+        # 1. Captura os dados enviados pelo formulário HTML (Incluindo o novo Tipo)
         title = request.POST.get('title')
+        ticket_type = request.POST.get('ticket_type') # <-- NOVO: Captura o tipo do chamado
         department_id = request.POST.get('department')
-        subject_id = request.POST.get('subject_id') # Este é o ID oculto gerado pela nossa cascata
+        subject_id = request.POST.get('subject_id')   # ID oculto gerado pela cascata JS
         description = request.POST.get('description')
 
-        # 2. Validação de Segurança Básica
-        if not title or not department_id or not subject_id or not description:
+        # 2. Validação de Segurança Básica (Incluindo o ticket_type como obrigatório)
+        if not title or not ticket_type or not department_id or not subject_id or not description:
             messages.error(request, "Por favor, preencha todos os campos obrigatórios da árvore de assunto.")
             return redirect('ticket_list')
 
@@ -87,18 +88,19 @@ def ticket_create(request):
             department = Department.objects.get(id=department_id)
             subject = TicketSubject.objects.get(id=subject_id)
 
-            # 3. Cria o chamado no banco de dados
+            # 3. Cria o chamado no banco de dados com a nova classificação
             Ticket.objects.create(
                 title=title,
+                ticket_type=ticket_type,  # <-- NOVO: Salva o tipo (INCIDENT, REQUEST, etc)
                 description=description,
                 department=department,
                 subject_id=subject.id,
-                requester=request.user,  # Quem abriu o chamado
-                status='OPEN',           # Status inicial padrão
-                priority='NOT_SET'       # Como removemos a urgência do usuário, definimos um padrão
+                requester=request.user,   # Quem abriu o chamado
+                status='OPEN',            # Status inicial padrão
+                priority='NOT_SET'        # Deixamos a definição da prioridade para o back-end/técnico
             )
             
-            # Mensagem de sucesso (aparecerá naquele banner superior do seu base.html)
+            # Mensagem de sucesso (aparecerá no banner superior do seu base.html)
             messages.success(request, "Chamado aberto e encaminhado com sucesso!")
             
         except Department.DoesNotExist:
@@ -110,7 +112,6 @@ def ticket_create(request):
 
     # Independente de dar certo ou errado, devolve o usuário para a tela de chamados
     return redirect('ticket_list')
-
 
 @login_required
 def ticket_detail(request, ticket_id):
