@@ -42,7 +42,7 @@ def ticket_list(request):
     # 3. PREPARAÇÃO DO MODAL DE NOVA DEMANDA (CASCATA)
     departments = Department.objects.all()
     subjects_data = []
-    for s in TicketSubject.objectsprefetch_related('department').all():
+    for s in TicketSubject.objects.prefetch_related('department').all():
         subjects_data.append({
             'id': s.id,
             'name': s.name,
