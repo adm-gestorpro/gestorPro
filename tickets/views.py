@@ -43,7 +43,7 @@ def ticket_list(request):
     departments = Department.objects.all()
     all_subjects = TicketSubject.objects.all()
     subjects_data = []
-    for s in Subject.objects.all():
+    for s in TicketSubject.objects.all():
         subjects_data.append({
             'id': s.id,
             'name': s.name,
