@@ -257,7 +257,7 @@
                     <tr>
                         <th scope="col" class="px-6 py-4 font-semibold">Produto / Identificadores</th>
                         <th scope="col" class="px-6 py-4 font-semibold text-center">Loja</th>
-                        <th scope="col" class="px-6 py-4 font-semibold text-center">Lote</th>
+                        <th scope="col" class="px-6 py-4 font-semibold text-center">Lote / Quantidade</th>
                         <th scope="col" class="px-6 py-4 font-semibold text-center">Vencimento</th>
                         <th scope="col" class="px-6 py-4 font-semibold text-center">Status</th>
                         <th scope="col" class="px-6 py-4 font-semibold text-center">Ações</th>
@@ -289,7 +289,12 @@
                         
                         <td class="text-center flex justify-between items-center md:table-cell px-4 md:px-6 py-3 md:py-4 font-mono text-xs text-slate-700 dark:text-slate-300">
                             <span class="md:hidden font-sans text-xs font-medium text-slate-500 uppercase tracking-wide">Lote</span>
-                            <span>{{ item.num_lote }}</span>
+                            <span>{{ item.num_lote }}</span><br>
+                            {% if item.qt_lote > 1 %}
+                            <span>{{ item.qt_lote|floatformat:0 }} unidades</span>
+                            {% else %}
+                            <span>{{ item.qt_lote|floatformat:0 }} unidade</span>
+                            {% endif %}
                         </td>
                         
                         <td class="text-center flex justify-between items-center md:table-cell px-4 md:px-6 py-3 md:py-4 font-mono text-xs text-slate-700 dark:text-slate-300">
