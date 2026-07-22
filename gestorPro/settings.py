@@ -179,18 +179,18 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 
 
-#Caminho para o arquivo JSON de credenciais
-FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'firebase-credentials.json')
+# #Caminho para o arquivo JSON de credenciais
+# FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'firebase-credentials.json')
 
-#Inicializar o App do Firebase Admin
-FIREBASE_CRED = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
-FIREBASE_APP = firebase_admin.initialize_app(FIREBASE_CRED)
+# #Inicializar o App do Firebase Admin
+# FIREBASE_CRED = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+# FIREBASE_APP = firebase_admin.initialize_app(FIREBASE_CRED)
 
-# Configurações da fcm-django
-FCM_DJANGO = {
-    "DEFAULT_FIREBASE_APP": FIREBASE_APP,
-    # Permite que o mesmo usuário receba notificações no celular e no desktop
-    "ONE_DEVICE_PER_USER": False,
-    # Exclui automaticamente tokens que o Firebase retornar como inválidos
-    "DELETE_INACTIVE_DEVICES": True,
-}
+# # Configurações da fcm-django
+# FCM_DJANGO = {
+#     "DEFAULT_FIREBASE_APP": FIREBASE_APP,
+#     # Permite que o mesmo usuário receba notificações no celular e no desktop
+#     "ONE_DEVICE_PER_USER": False,
+#     # Exclui automaticamente tokens que o Firebase retornar como inválidos
+#     "DELETE_INACTIVE_DEVICES": True,
+# }
