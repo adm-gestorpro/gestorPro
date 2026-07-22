@@ -1,15 +1,16 @@
 from datetime import date, datetime, timedelta
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import F, Value, CharField, Count, Q, Case, When, ExpressionWrapper, DurationField
 from django.db.models.functions import ExtractDay
 from django.http import QueryDict
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.http import JsonResponse
 
-from produtos.models import Produto, Validade
+from produtos.models import Produto, Validade, Ruptura
 from controle.models import Loja, Rede
 
 from controle.scripts.consulta_estoques import consulta_estoque
@@ -24,7 +25,6 @@ def erro_403_customizado(request, exception=None):
     }
     return render(request, '403.html', contexto, status=403)
 
-
 def checa_multiplos_grupos_403(nomes_grupos):
     def decorator(view_func):
         def _wrapped_view(request, *args, **kwargs):
@@ -33,7 +33,6 @@ def checa_multiplos_grupos_403(nomes_grupos):
             raise PermissionDenied
         return _wrapped_view
     return decorator
-
 
 @login_required
 def buscar_produtos_api(request):
@@ -60,7 +59,6 @@ def buscar_produtos_api(request):
         })
 
     return JsonResponse({'produtos': resultados})
-
 
 @login_required
 def listar_produtos(request):
@@ -168,11 +166,9 @@ def listar_produtos(request):
     
     return render(request, 'listar_produtos.html', context)
 
-
 @login_required
 def cadastrar_lote(request):
     return render(request, 'controle_validade/validade_dashboard.html')
-
 
 @login_required
 @checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Gerente Distrital', 'Atendente/Vendedor'])
@@ -377,7 +373,6 @@ def editar_validade(request, id):
         
     return JsonResponse({'status': 'error', 'message': 'Método inválido'}, status=400)
 
-
 @login_required
 @checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Gerente Distrital'])
 def inativar_validade(request, id):
@@ -387,3 +382,135 @@ def inativar_validade(request, id):
         return JsonResponse({'status': 'success'})
         
     return JsonResponse({'status': 'error', 'message': 'Método inválido'}, status=400)
+
+
+@login_required
+@checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Gerente Distrital', 'Atendente/Vendedor', 'Comprador'])
+def ruptura_list(request):
+    perfil = request.user.perfil
+    lojas_permitidas = perfil.get_lojas_acessiveis()
+
+    # 1. Parâmetros da requisição / Filtros
+    filtro_status = request.GET.get('status', '').strip()
+    filtro_loja = request.GET.get('loja', '').strip()
+    query = request.GET.get('q', '').strip()
+    per_page = request.GET.get('per_page', '50')
+    if per_page not in ['50', '100', '200', '500']:
+        per_page = '50'
+
+    # 2. QuerySet Base Otimizado usando "loja_id"
+    rupturas_qs = Ruptura.objects.filter(
+        loja_id__in=lojas_permitidas
+    ).select_related('produto', 'loja_id', 'criado_por')
+
+    # 3. Filtro por Loja Específica
+    if filtro_loja:
+        rupturas_qs = rupturas_qs.filter(loja_id__cod_loja=filtro_loja)
+
+    # 4. Filtro por Status
+    if filtro_status:
+        rupturas_qs = rupturas_qs.filter(status=filtro_status)
+
+    # 5. Filtro Textual
+    if query:
+        rupturas_qs = rupturas_qs.filter(
+            Q(produto__desc_produto__icontains=query) |
+            Q(produto__cod_produto__icontains=query) |
+            Q(produto__cod_gtin_principal__icontains=query) |
+            Q(observacao_loja__icontains=query)
+        )
+
+    # 6. Ordenação nativa e Paginação
+    rupturas_qs = rupturas_qs.order_by('-data_cadastro')
+    paginator = Paginator(rupturas_qs, int(per_page))
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    # 6.1. Cálculo dinâmico de dias em aberto
+    hoje = timezone.now()
+    for r in page_obj.object_list:
+        if r.data_cadastro:
+            delta = hoje - r.data_cadastro
+            r.dias_cadastrado = delta.days
+        else:
+            r.dias_cadastrado = 0
+
+    # 7. Regra de perfil para o modal de alteração de status
+    grupos_gestao = ['Administrador', 'Diretoria', 'Comprador']
+    e_gestor_ou_comprador = request.user.is_superuser or request.user.groups.filter(name__in=grupos_gestao).exists()
+
+    # 8. Consulta de Lojas para preencher o select do Modal e dos Filtros
+    lojas_acesso = Loja.objects.filter(cod_loja__in=lojas_permitidas.values_list('cod_loja', flat=True)).order_by('cod_loja')
+
+    context = {
+        'page_obj': page_obj,
+        'rupturas': page_obj.object_list,
+        'lojas_acesso': lojas_acesso,
+        'e_gestor_ou_comprador': e_gestor_ou_comprador,
+        'filtro_status': filtro_status,
+        'filtro_loja': filtro_loja,
+        'query': query,
+        'per_page': int(per_page),
+    }
+
+    return render(request, 'rupturas.html', context)
+
+@login_required
+def cadastrar_ruptura(request):
+    if request.method == 'POST':
+        produto_id = request.POST.get('produto_id')
+        loja_id = request.POST.get('loja') or request.POST.get('loja_id')
+        quantidade = request.POST.get('quantidade')
+        observacao = request.POST.get('observacao_loja', '')
+
+        if produto_id and quantidade and loja_id:
+            produto = get_object_or_404(Produto, pk=produto_id)
+            
+            # Tenta buscar a loja pelo ID (pk) ou pelo código da loja (cod_loja)
+            try:
+                loja = Loja.objects.get(pk=loja_id)
+            except (Loja.DoesNotExist, ValueError):
+                loja = get_object_or_404(Loja, cod_loja=loja_id)
+
+            Ruptura.objects.create(
+                produto=produto,
+                loja_id=loja,  # Atribui o objeto Loja corretamente ao campo do model
+                quantidade_necessaria=quantidade,
+                observacao_loja=observacao,
+                criado_por=request.user
+            )
+            messages.success(request, "Ruptura cadastrada com sucesso!")
+        else:
+            messages.error(request, "Preencha todos os campos obrigatórios, incluindo a loja e o produto.")
+
+    return redirect('ruptura_list')
+
+@login_required
+def buscar_produtos_ajax(request):
+    """Endpoint para busca em tempo real no modal"""
+    term = request.GET.get('q', '')
+    produtos = Produto.objects.filter(desc_produto__icontains=term) | Produto.objects.filter(cod_produto__icontains=term) | Produto.objects.filter(cod_gtin_principal__icontains=term)
+    data = [{'id': p.id, 'codigo': p.codigo, 'nome': p.nome} for p in produtos[:20]]
+    return JsonResponse({'results': data})
+
+@login_required
+def atualizar_status_ruptura(request):
+    if request.method == 'POST':
+        ruptura_id = request.POST.get('ruptura_id')
+        novo_status = request.POST.get('novo_status')
+        obs_comprador = request.POST.get('observacao_comprador')
+        obs_loja = request.POST.get('observacao_loja')
+
+        ruptura = get_object_or_404(Ruptura, id=ruptura_id)
+
+        if novo_status:
+            ruptura.status = novo_status
+        if obs_comprador is not None:
+            ruptura.observacao_comprador = obs_comprador
+        if obs_loja is not None:
+            ruptura.observacao_loja = obs_loja
+
+        ruptura.atualizado_por = request.user
+        ruptura.save()
+        messages.success(request, f"Status da Ruptura #{ruptura.id} atualizado para '{ruptura.get_status_display()}'!")
+
+    return redirect('ruptura_list')
