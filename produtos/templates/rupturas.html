@@ -497,5 +497,47 @@
             }
         });
     });
+
+
+    // ==========================================
+    // ATUALIZAÇÃO AUTOMÁTICA DA LISTA (1 MINUTO)
+    // ==========================================
+    const TEMPO_REFRESH_MS = 60000; // 60.000ms = 1 Minuto
+
+    setInterval(() => {
+        // 1. Verifica se algum modal está aberto para não interromper a ação do usuário
+        const modalAdd = document.getElementById('modal-add-ruptura');
+        const modalStatus = document.getElementById('modal-status-ruptura');
+        
+        const isModalAddAberto = modalAdd && !modalAdd.classList.contains('hidden');
+        const isModalStatusAberto = modalStatus && !modalStatus.classList.contains('hidden');
+
+        if (isModalAddAberto || isModalStatusAberto) {
+            console.log("Atualização automática pausada: Modal aberto.");
+            return;
+        }
+
+        // 2. Busca o HTML atualizado mantendo os parâmetros de busca/filtro atuais
+        fetch(window.location.href)
+            .then(response => {
+                if (!response.ok) throw new Error("Erro na requisição");
+                return response.text();
+            })
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                // Localiza e substitui apenas a área da tabela
+                const novaTabela = doc.querySelector('.overflow-x-auto');
+                const tabelaAtual = document.querySelector('.overflow-x-auto');
+
+                if (novaTabela && tabelaAtual) {
+                    tabelaAtual.innerHTML = novaTabela.innerHTML;
+                    console.log(`[${new Date().toLocaleTimeString()}] Lista de rupturas atualizada com sucesso.`);
+                }
+            })
+            .catch(err => console.error("Erro ao atualizar lista de rupturas:", err));
+
+    }, TEMPO_REFRESH_MS);
 </script>
 {% endblock extra_js %}
