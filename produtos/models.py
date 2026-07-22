@@ -40,3 +40,35 @@ class Validade(models.Model):
         indexes = [
             models.Index(fields=['ativo', 'cod_loja', 'dt_validade']),
         ]
+
+
+class Ruptura(models.Model):
+    STATUS_CHOICES = [
+        ('EM_ABERTO', 'Em Aberto'),
+        ('AGUARDANDO_FORNECEDOR', 'Aguardando Fornecedor'),
+        ('RESOLVIDO', 'Resolvido pelo Comprador'),
+        ('FINALIZADO', 'Finalizado pela Loja'),
+        ('PENDENTE', 'Pendente / Reaberto'),
+    ]
+
+    loja_id = models.ForeignKey(Loja, on_delete=models.CASCADE, verbose_name='Código da loja')
+    produto = models.ForeignKey(Produto, on_delete=models.CASCADE, related_name='rupturas', verbose_name="Produto")
+    quantidade_necessaria = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Qtd. Necessária")
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='EM_ABERTO', verbose_name="Status")
+    
+    observacao_loja = models.TextField(blank=True, null=True, verbose_name="Obs. da Loja")
+    observacao_comprador = models.TextField(blank=True, null=True, verbose_name="Obs. do Comprador")
+    
+    criado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='rupturas_criadas')
+    atualizado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='rupturas_atualizadas')
+    
+    data_cadastro = models.DateTimeField(auto_now_add=True)
+    data_atualizacao = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-data_cadastro']
+        verbose_name = 'Ruptura'
+        verbose_name_plural = 'Rupturas'
+
+    def __str__(self):
+        return f"Ruptura #{self.id} - {self.produto.desc_produto} ({self.get_status_display()})"

@@ -15,6 +15,8 @@ from pathlib import Path
 import psycopg2
 from dotenv import load_dotenv
 import os
+import firebase_admin
+from firebase_admin import credentials
 
 
 load_dotenv()
@@ -51,8 +53,10 @@ INSTALLED_APPS = [
     'clientes',
     'fornecedores',
     'tickets',
+    'notify',
     'sslserver',
     'django_extensions',
+    'fcm_django'
 ]
 
 MIDDLEWARE = [
@@ -172,3 +176,21 @@ SESSION_SAVE_EVERY_REQUEST = True
 
 # 3. Opcional: Garante que se ele fechar o navegador, a sessão também morre.
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+
+
+#Caminho para o arquivo JSON de credenciais
+FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'firebase-credentials.json')
+
+#Inicializar o App do Firebase Admin
+FIREBASE_CRED = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+FIREBASE_APP = firebase_admin.initialize_app(FIREBASE_CRED)
+
+# Configurações da fcm-django
+FCM_DJANGO = {
+    "DEFAULT_FIREBASE_APP": FIREBASE_APP,
+    # Permite que o mesmo usuário receba notificações no celular e no desktop
+    "ONE_DEVICE_PER_USER": False,
+    # Exclui automaticamente tokens que o Firebase retornar como inválidos
+    "DELETE_INACTIVE_DEVICES": True,
+}

@@ -1,0 +1,502 @@
+{% extends "base.html" %}
+
+{% block title %}Controle de Rupturas | GestorPro{% endblock %}
+{% block page_name %}Rupturas{% endblock %}
+
+{% block extra_css %}{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+    
+    <!-- Cabeçalho da Página -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Controle de Rupturas</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Registre e gerencie as faltas de produtos na área de vendas.</p>
+        </div>
+        
+        <!-- Botão Acionador do Modal -->
+        <button onclick="abrirModal('modal-add-ruptura')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center whitespace-nowrap">
+            <i class="fa-solid fa-plus mr-2 mt-0.5"></i> Informar Ruptura
+        </button>
+    </div>
+
+    <!-- Barra de Filtros -->
+    <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+        <form method="GET" action="" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            
+            <!-- Busca Geral (Produto / EAN / Código / Obs) -->
+            <div class="lg:col-span-2">
+                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Pesquisar Produto / EAN / Cód.</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input type="text" name="q" value="{{ query }}" placeholder="Nome, Cód. Interno ou EAN..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+
+            <!-- Filtro por Loja -->
+            <div>
+                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Loja</label>
+                <select name="loja" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Todas as Lojas</option>
+                    {% for l in lojas_acesso %}
+                        <option value="{{ l.cod_loja }}" {% if filtro_loja == l.cod_loja|stringformat:"s" %}selected{% endif %}>
+                            Loja {{ l.nome|default:l.nome_fantasia|default:"" }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Filtro por Usuário -->
+            <div>
+                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Registrado por</label>
+                <select name="usuario" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Todos os Usuários</option>
+                    {% for u in usuarios_criadores %}
+                        <option value="{{ u.id }}" {% if filtro_usuario == u.id|stringformat:"s" %}selected{% endif %}>
+                            {{ u.first_name|default:u.username }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Filtro por Status -->
+            <div>
+                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Status</label>
+                <select name="status" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Todos os Status</option>
+                    <option value="EM_ABERTO" {% if filtro_status == 'EM_ABERTO' %}selected{% endif %}>Em Aberto</option>
+                    <option value="AGUARDANDO_FORNECEDOR" {% if filtro_status == 'AGUARDANDO_FORNECEDOR' %}selected{% endif %}>Aguardando Fornecedor</option>
+                    <option value="RESOLVIDO" {% if filtro_status == 'RESOLVIDO' %}selected{% endif %}>Resolvido</option>
+                    <option value="FINALIZADO" {% if filtro_status == 'FINALIZADO' %}selected{% endif %}>Finalizado</option>
+                    <option value="CANCELADO" {% if filtro_status == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+                </select>
+            </div>
+
+            <!-- Botões de Ação do Filtro -->
+            <div class="lg:col-span-5 flex justify-end gap-2 pt-2">
+                <a href="{% url 'ruptura_list' %}" onclick="showLoading();" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium transition-colors">
+                    Limpar Filtros
+                </a>
+                <button type="submit" onclick="showLoading();" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                    Filtrar Rupturas
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabela de Rupturas -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-slate-600 dark:text-slate-300">
+                <thead class="text-xs uppercase bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                    <tr>
+                        <th scope="col" class="px-6 py-3">Loja</th>
+                        <th scope="col" class="px-6 py-3">Produto</th>
+                        <th scope="col" class="px-6 py-3">Cód. Interno<br>EAN</th>
+                        <th scope="col" class="px-6 py-3 text-center">Qtd. Necessária</th>
+                        <th scope="col" class="px-6 py-3 text-center">Status</th>
+                        <th scope="col" class="px-6 py-3">Registrado Por</th>
+                        <th scope="col" class="px-6 py-3">Data / Tempo em Aberto</th>
+                        <th scope="col" class="px-6 py-3 text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    {% for ruptura in rupturas %}
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                            <!-- Loja -->
+                            <td class="px-6 py-4 font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                                <i class="fa-solid fa-store text-slate-400 mr-1.5"></i>
+                                Loja {{ ruptura.loja_id.cod_loja }}
+                            </td>
+
+                            <!-- Produto -->
+                            <td class="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                                {{ ruptura.produto.desc_produto }}
+                            </td>
+                            
+                            <!-- Cód Interno / EAN -->
+                            <td class="px-6 py-4 text-xs font-mono text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                {{ ruptura.produto.cod_produto|default:"-" }} <br>
+                                {{ ruptura.produto.cod_gtin_principal|default:"-" }}
+                            </td>
+                            
+                            <!-- Quantidade Necessária -->
+                            <td class="px-6 py-4 text-center font-semibold text-slate-800 dark:text-slate-200">
+                                {{ ruptura.quantidade_necessaria|default:"0"|floatformat:0 }}
+                            </td>
+                            
+                            <!-- Status Badges -->
+                            <td class="px-6 py-4 text-center whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
+                                    {% if ruptura.status == 'FINALIZADO' or ruptura.status == 'CONCLUIDO' %}
+                                        bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400
+                                    {% elif ruptura.status == 'RESOLVIDO' %}
+                                        bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400
+                                    {% elif ruptura.status == 'EM_ATENDIMENTO' or ruptura.status == 'EM_ANDAMENTO' %}
+                                        bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400
+                                    {% elif ruptura.status == 'CANCELADO' %}
+                                        bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400
+                                    {% else %}
+                                        bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400
+                                    {% endif %}">
+                                    {{ ruptura.get_status_display|default:ruptura.status|default:"EM ABERTO" }}
+                                </span>
+                            </td>
+
+                            <!-- Registrado Por -->
+                            <td class="px-6 py-4 text-xs font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                <i class="fa-regular fa-user text-slate-400 mr-1"></i>
+                                {{ ruptura.criado_por.first_name|default:ruptura.criado_por.username|default:"Sistema" }}
+                            </td>
+                            
+                            <!-- Data / Tempo Cadastrado -->
+                            <td class="px-6 py-4 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                <div>{{ ruptura.data_cadastro|date:"d/m/Y H:i" }}</div>
+                                <div class="text-[11px] font-semibold text-amber-600 dark:text-amber-400 mt-0.5">
+                                    {% if ruptura.dias_cadastrado == 0 %}
+                                        Cadastrado hoje
+                                    {% elif ruptura.dias_cadastrado == 1 %}
+                                        Há 1 dia
+                                    {% else %}
+                                        Há {{ ruptura.dias_cadastrado }} dias
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <!-- Coluna Ações -->
+                            <td class="px-6 py-4 text-center whitespace-nowrap">
+                                {% if e_gestor_ou_comprador or ruptura.status == 'RESOLVIDO' %}
+                                    <button 
+                                        type="button" 
+                                        onclick="abrirModalStatus('{{ ruptura.id }}', '{{ ruptura.status }}')"
+                                        class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shadow-sm">
+                                        <i class="fa-solid fa-pen-to-square text-blue-500"></i> Status
+                                    </button>
+                                {% else %}
+                                    <span class="text-xs text-slate-400 dark:text-slate-600">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="p-8 text-center text-slate-500 dark:text-slate-400">
+                                <i class="fa-solid fa-box-open text-3xl mb-2 block opacity-50"></i>
+                                Nenhuma ruptura encontrada com os filtros informados.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: ADICIONAR NOVA RUPTURA              -->
+    <!-- ========================================== -->
+    <div id="modal-add-ruptura" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white">Informar Nova Ruptura</h3>
+                <button type="button" onclick="fecharModal('modal-add-ruptura')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <form method="POST" action="{% url 'cadastrar_ruptura' %}" class="space-y-4">
+                {% csrf_token %}
+                
+                <!-- CAMPO DA LOJA OBRIGATÓRIO -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Loja</label>
+                    <select name="loja" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Selecione a loja...</option>
+                        {% for l in lojas_acesso %}
+                            <option value="{{ l.id|default:l.cod_loja }}">
+                                Loja {{ l.cod_loja }} - {{ l.nome|default:l.nome_fantasia|default:"" }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Busca de Produto -->
+                <div class="relative">
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Produto</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="produto-search" placeholder="Digite o nome, código interno ou EAN..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-blue-500 focus:border-blue-500" autocomplete="off" required>
+                        <button type="button" onclick="iniciarScanner()" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-sm transition-colors" title="Escanear Código de Barras">
+                            <i class="fa-solid fa-barcode"></i>
+                        </button>
+                    </div>
+                    <input type="hidden" name="produto_id" id="produto-id" required>
+                    
+                    <!-- Resultados do Autocomplete -->
+                    <div id="produto-results" class="hidden absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-48 overflow-y-auto"></div>
+                </div>
+
+                <!-- Scanner Container -->
+                <div id="scanner-container" class="hidden space-y-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <div id="reader" class="w-full"></div>
+                    <button type="button" onclick="fecharScanner()" class="w-full py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium">Fechar Câmera</button>
+                </div>
+
+                <!-- Quantidade -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Quantidade Necessária</label>
+                    <input type="number" step="any" name="quantidade" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <!-- Observação -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Observação</label>
+                    <textarea name="observacao_loja" placeholder="Coloque uma justificativa (opcional)" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="fecharModal('modal-add-ruptura')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                        Cadastrar Ruptura
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: ALTERAR STATUS DA RUPTURA           -->
+    <!-- ========================================== -->
+    <div id="modal-status-ruptura" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md animate-in fade-in zoom-in duration-200 my-auto">
+            <div class="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white">Atualizar Status da Ruptura</h3>
+                <button onclick="fecharModal('modal-status-ruptura')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <form method="POST" action="{% url 'atualizar_status_ruptura' %}" onsubmit="showLoading()" class="p-5 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="ruptura_id" id="modal-status-ruptura-id">
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Novo Status</label>
+                    <select name="novo_status" id="select-novo-status" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white">
+                        <!-- Opções preenchidas dinamicamente via JS com base no perfil e status atual -->
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Observação do Comprador / Resposta</label>
+                    <textarea name="observacao_comprador" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white" placeholder="Informe detalhes do atendimento ou solução..."></textarea>
+                </div>
+
+                <div class="pt-4 mt-2 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3">
+                    <button type="button" onclick="fecharModal('modal-status-ruptura')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">Atualizar Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- OVERLAY DE LOADING DURANTE O POST          -->
+    <!-- ========================================== -->
+    <div id="loading-overlay" class="fixed inset-0 z-[9999] hidden flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm transition-opacity">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mb-4"></div>
+        <h2 class="text-xl font-bold text-white">Processando...</h2>
+        <p class="text-slate-300 mt-2 text-sm">Por favor, aguarde enquanto salvamos as informações.</p>
+    </div>
+
+    
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+<script>
+    // Flag do Python renderizada no JS para verificação do perfil
+    const E_GESTOR_OU_COMPRADOR = {{ e_gestor_ou_comprador|yesno:"true,false" }};
+
+    function showLoading() {
+        const overlay = document.getElementById('loading-overlay');
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+    }
+
+    function abrirModal(idModal) {
+        const modal = document.getElementById(idModal);
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    }
+
+    function fecharModal(idModal) {
+        const modal = document.getElementById(idModal);
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+        if(idModal === 'modal-add-ruptura') {
+            document.querySelector('#modal-add-ruptura form').reset();
+            document.getElementById('produto-id').value = '';
+            document.getElementById('produto-results').innerHTML = '';
+            document.getElementById('produto-results').classList.add('hidden');
+            fecharScanner();
+        }
+    }
+
+    // Modal de Status com Regras de Transição por Perfil
+    function abrirModalStatus(rupturaId, currentStatus) {
+        // Atualiza o ID no input hidden do formulário
+        document.getElementById('modal-status-ruptura-id').value = rupturaId;
+        
+        const select = document.getElementById('select-novo-status');
+        select.innerHTML = ''; // Limpa as opções existentes
+        select.disabled = false; // Garante que o select não está bloqueado
+
+        // REGRA 2: Se o status atual for 'RESOLVIDO' (Ação geralmente feita pela Loja)
+        if (currentStatus === 'RESOLVIDO') {
+            select.appendChild(new Option('Finalizado (Atendido / OK)', 'FINALIZADO'));
+            
+            // Verifique no seu models.py qual é a chave exata para "Pendente" 
+            // (Pode ser 'PENDENTE' ou voltar para 'EM_ABERTO')
+            select.appendChild(new Option('Pendente (Retornar para o Comprador)', 'PENDENTE')); 
+        } 
+        // REGRA 1: Se NÃO estiver resolvido e o usuário for Comprador/Admin
+        else if (E_GESTOR_OU_COMPRADOR) {
+            select.appendChild(new Option('Em Aberto', 'EM_ABERTO'));
+            
+            // Verifique no seu models.py se a chave é exatamente 'AGUARDANDO_FORNECEDOR'
+            select.appendChild(new Option('Aguardando Fornecedor', 'AGUARDANDO_FORNECEDOR'));
+            
+            select.appendChild(new Option('Resolvido', 'RESOLVIDO'));
+            
+            // Tenta deixar o status atual selecionado por padrão (se ele estiver nas opções)
+            if (['EM_ABERTO', 'AGUARDANDO_FORNECEDOR', 'RESOLVIDO'].includes(currentStatus)) {
+                select.value = currentStatus;
+            }
+        } 
+        // CENÁRIO EXTRA: Usuário de Loja tentando abrir uma ruptura que ainda não está resolvida
+        else {
+            // A loja não pode alterar o status se não estiver "RESOLVIDO"
+            select.appendChild(new Option(currentStatus, currentStatus));
+            select.disabled = true; // Bloqueia o campo para a loja
+        }
+
+        // Lógica para abrir seu modal (ajuste conforme o framework CSS que está usando, ex: Bootstrap ou Tailwind)
+        // ex: document.getElementById('modal-status-ruptura').classList.remove('hidden');
+        abrirModal('modal-status-ruptura'); // Supondo que você já tenha essa função
+    }
+
+    // Leitor de Barcode
+    let html5QrCode = null;
+
+    function iniciarScanner() {
+        const scannerContainer = document.getElementById('scanner-container');
+        scannerContainer.classList.remove('hidden');
+
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode("reader");
+        }
+
+        html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 150 } },
+            (decodedText) => {
+                const inputSearch = document.getElementById('produto-search');
+                inputSearch.value = decodedText;
+                inputSearch.dispatchEvent(new Event('input')); 
+                fecharScanner();
+            },
+            () => {}
+        ).catch((err) => {
+            console.error("Erro Câmera: ", err);
+            alert("Não foi possível acessar a câmera.");
+            fecharScanner();
+        });
+    }
+
+    function fecharScanner() {
+        const scannerContainer = document.getElementById('scanner-container');
+        scannerContainer.classList.add('hidden');
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().then(() => html5QrCode.clear()).catch(console.error);
+        }
+    }
+
+    // Autocomplete Busca AJAX
+    let timeoutBusca = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const produtoSearch = document.getElementById('produto-search');
+        const produtoResults = document.getElementById('produto-results');
+        const produtoId = document.getElementById('produto-id');
+
+        if (produtoSearch) {
+            produtoSearch.addEventListener('input', function () {
+                const termo = this.value.trim();
+                produtoResults.innerHTML = '';
+
+                if (termo.length < 2) {
+                    produtoResults.classList.add('hidden');
+                    produtoId.value = '';
+                    return;
+                }
+
+                clearTimeout(timeoutBusca);
+
+                timeoutBusca = setTimeout(async () => {
+                    try {
+                        const urlBusca = "{% url 'api_buscar_produtos' %}";
+                        const response = await fetch(`${urlBusca}?q=${encodeURIComponent(termo)}`);
+                        if (!response.ok) throw new Error("Erro na busca");
+                        
+                        const data = await response.json();
+                        const filtrados = data.resultados;
+
+                        produtoResults.innerHTML = '';
+
+                        if (filtrados.length === 0) {
+                            produtoResults.innerHTML = `<div class="p-3 text-sm text-slate-500 dark:text-slate-400">Nenhum produto encontrado.</div>`;
+                        } else {
+                            filtrados.forEach(produto => {
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = "w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 border-b border-slate-100 dark:border-slate-700 transition-colors";
+                                btn.innerHTML = `
+                                    <div class="font-medium text-slate-900 dark:text-white">${produto.nome}</div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                        Int: <span class="font-semibold">${produto.codigo_interno || '-'}</span> | EAN: <span class="font-semibold">${produto.codigo_barras || '-'}</span>
+                                    </div>
+                                `;
+                                btn.onclick = () => {
+                                    produtoSearch.value = produto.nome; 
+                                    produtoId.value = produto.id;      
+                                    produtoResults.classList.add('hidden');
+                                };
+                                produtoResults.appendChild(btn);
+                            });
+                        }
+                        produtoResults.classList.remove('hidden');
+                    } catch (error) {
+                        console.error(error);
+                    }
+                }, 300);
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (produtoSearch && !produtoSearch.contains(e.target) && !produtoResults.contains(e.target)) {
+                produtoResults.classList.add('hidden');
+            }
+        });
+    });
+</script>
+{% endblock extra_js %}
