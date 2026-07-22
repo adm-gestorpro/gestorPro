@@ -17,6 +17,30 @@ from controle.scripts.consulta_estoques import consulta_estoque
 from controle.scripts.consulta_precos import consulta_preco
 
 
+# ==========================================
+# FUNÇÃO AUXILIAR DE PERMISSÃO DE RUPTURA
+# ==========================================
+def usuario_e_gestor_ou_comprador(user):
+    """Retorna True apenas se o usuário for superuser ou pertencer aos grupos de gestão/compras."""
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    
+    grupos_gestao = ['Administrador', 'Diretoria', 'Comprador', 'Gestor']
+    if user.groups.filter(name__in=grupos_gestao).exists():
+        return True
+        
+    # Checagem segura caso haja propriedade no Perfil (executa se for chamável)
+    if hasattr(user, 'perfil'):
+        val = getattr(user.perfil, 'e_gestor_ou_comprador', False)
+        if callable(val):
+            return bool(val())
+        return bool(val)
+        
+    return False
+
+
 @login_required
 def erro_403_customizado(request, exception=None):
     contexto = {
@@ -38,11 +62,9 @@ def checa_multiplos_grupos_403(nomes_grupos):
 def buscar_produtos_api(request):
     query = request.GET.get('q', '').strip()
     
-    # Só pesquisa se tiver pelo menos 2 caracteres para economizar processamento
     if len(query) < 2:
         return JsonResponse({'produtos': []})
 
-    # Busca rápida limitando a 15 resultados
     produtos = Produto.objects.filter(
         Q(cod_produto__icontains=query) |
         Q(cod_gtin_principal__icontains=query) |
@@ -66,37 +88,27 @@ def listar_produtos(request):
     produtos_resultado = []
 
     if request.method == 'POST':
-        # Recebemos o ID exato via campo oculto ou a query digitada
         produto_id = request.POST.get('produto_id', '').strip()
         query = request.POST.get('q', '').strip()
 
         produtos_queryset = []
 
         if produto_id:
-            # Fluxo ideal: o usuário clicou na sugestão e enviou o ID
             produtos_queryset = Produto.objects.filter(cod_gtin_principal=produto_id)
         elif query:
-            # Fallback: Se o usuário der Enter ou bipar o leitor sem clicar na lista, 
-            # busca exata por código EAN ou Interno.
             produtos_queryset = Produto.objects.filter(
-                Q(cod_gtin_principal=query)# | Q(cod_produto=query)
+                Q(cod_gtin_principal=query)
             )
 
-        # Se encontrou o produto, faz o cálculo de estoque/lojas/validade
         if produtos_queryset:
-            # 1. Busca as lojas com permissão direta do usuário
             lojas_usuario = request.user.perfil.get_lojas_acessiveis()
 
-            # 2. Extrai os IDs das redes sem repetições e em ordem crescente
             if hasattr(lojas_usuario, 'values_list'):
                 _ids_brutos = lojas_usuario.values_list('id_rede', flat=True).distinct()
-                # O set {} garante a exclusão de duplicatas e o sorted() ordena de forma crescente
                 redes_ids = sorted({r for r in _ids_brutos if r})
             else:
-                # O mesmo processo, caso lojas_usuario seja uma lista comum
                 redes_ids = sorted({loja.rede_id for loja in lojas_usuario if getattr(loja, 'id_rede', None)})
 
-            # 3. Busca TODAS as lojas que pertencem a essas mesmas redes
             if redes_ids and lojas_usuario:
                 lojas_para_consultar = Loja.objects.filter(
                     id_rede__in=redes_ids
@@ -121,7 +133,7 @@ def listar_produtos(request):
                         ).order_by('dt_validade')
 
                         lista_validades = []
-                        total_validades = 0.0  # Usando float desde o início
+                        total_validades = 0.0
 
                         for val in validades_queryset:
                             lista_validades.append({
@@ -130,10 +142,8 @@ def listar_produtos(request):
                                 'quantidade': val.qt_lote,
                                 'vencido': val.dt_validade < data_atual
                             })
-                            # Garante que a quantidade do lote seja somada como número
                             total_validades += float(val.qt_lote)
 
-                        # 1. Extração segura do valor de estoque do objeto/dicionário
                         try:
                             if hasattr(relacao_estoque, 'estoque_disponivel'):
                                 qtd_estoque_loja = float(relacao_estoque.estoque_disponivel)
@@ -144,8 +154,6 @@ def listar_produtos(request):
                         except (ValueError, TypeError, AttributeError):
                             qtd_estoque_loja = 0.0
 
-                        # 2. Comparação segura arredondando para 3 casas decimais
-                        # Isso impede que diferenças invisíveis (como 10.0 != 10.000000001) ativem o aviso
                         estoque_desatualizado = round(total_validades, 3) != round(qtd_estoque_loja, 3)
 
                         lojas_acesso_dados.append({
@@ -175,7 +183,6 @@ def cadastrar_lote(request):
 def api_buscar_produtos(request):
     termo = request.GET.get('q', '').strip()
     
-    # Só busca no banco se o usuário tiver digitado pelo menos 2 caracteres
     if len(termo) < 2:
         return JsonResponse({'resultados': []})
         
@@ -205,7 +212,6 @@ def controle_validade(request):
     perfil = request.user.perfil
     lojas_permitidas = perfil.get_lojas_acessiveis()
 
-    # 1. Parâmetros da requisição
     filtro_status = request.GET.get('status', '').strip().lower()
     filtro_loja = request.GET.get('loja', '').strip()
     query = request.GET.get('q', '').strip()
@@ -215,7 +221,6 @@ def controle_validade(request):
 
     hoje = date.today()
 
-    # 2. QuerySet Base Otimizado (select_related essencial)
     validades_qs = Validade.objects.filter(
         ativo=True, 
         cod_loja__in=lojas_permitidas
@@ -224,12 +229,10 @@ def controle_validade(request):
     if filtro_loja:
         validades_qs = validades_qs.filter(cod_loja__cod_loja=filtro_loja)
 
-    # 3. Preparação de datas fixas para os Ranges
     trinta_dias = hoje + timedelta(days=30)
     sessenta_dias = hoje + timedelta(days=60)
     noventa_dias = hoje + timedelta(days=90)
 
-    # 4. Métricas calculadas em query dedicada (Garante cache do banco)
     metricas = validades_qs.aggregate(
         total_vencidos=Count('id', filter=Q(dt_validade__lt=hoje)),
         total_critico=Count('id', filter=Q(dt_validade__gte=hoje, dt_validade__lte=trinta_dias)),
@@ -238,7 +241,6 @@ def controle_validade(request):
         total_seguro=Count('id', filter=Q(dt_validade__gt=noventa_dias))
     )
 
-    # 5. Aplicação de filtros textuais se existirem
     if query:
         validades_qs = validades_qs.filter(
             Q(id_produto__desc_produto__icontains=query) |
@@ -247,7 +249,6 @@ def controle_validade(request):
             Q(num_lote__icontains=query)
         )
 
-    # 6. Filtros de Status baseados nas datas calculadas
     if filtro_status == 'vencido':
         validades_qs = validades_qs.filter(dt_validade__lt=hoje)
     elif filtro_status == 'critico':
@@ -259,15 +260,13 @@ def controle_validade(request):
     elif filtro_status == 'seguro':
         validades_qs = validades_qs.filter(dt_validade__gt=noventa_dias)
 
-    # 7. Ordenação nativa e Paginação eficiente
     validades_qs = validades_qs.order_by('dt_validade')
     paginator = Paginator(validades_qs, int(per_page))
     page_obj = paginator.get_page(request.GET.get('page'))
 
-    # 8. Anotação Dinâmica no Python de atributos voláteis (Rápido e mantém o Objeto ativo)
     for p in page_obj.object_list:
         dias_restantes = (p.dt_validade - hoje).days
-        p.dias_restantes = dias_restantes  # Injeta direto no objeto na memória
+        p.dias_restantes = dias_restantes
         
         if dias_restantes < 0:
             p.status_texto = "Vencido"
@@ -290,10 +289,8 @@ def controle_validade(request):
             p.badge_class = "bg-emerald-100 text-emerald-800 border-emerald-200"
             p.badge_dot = "bg-emerald-500"
 
-        # Captura amigável do primeiro nome do usuário cadastrado
         p.lancado_por_nome = p.usuario_cadastro.first_name if p.usuario_cadastro else 'Sistema'
 
-    # 9. Consultas auxiliares leves
     lojas = Loja.objects.filter(cod_loja__in=lojas_permitidas).order_by('cod_loja')
 
     context = {
@@ -340,7 +337,6 @@ def cadastrar_validade(request):
             )
             validade.save()
         else:
-            # OTIMIZAÇÃO EXTREMA: Soma direto no banco usando F expressions (Não puxa dados pra memória)
             Validade.objects.filter(
                 id_produto=consulta_produto,
                 num_lote__iexact=dados['lote'].strip(),
@@ -368,7 +364,6 @@ def editar_validade(request, id):
             usuario_ultimo=request.user,
             promocao_ativa=dados.get('promocao_ativa', False)
         )
-        # CORREÇÃO: Como o JS usa Fetch, retornamos JSON para responder em 10ms
         return JsonResponse({'status': 'success'})
         
     return JsonResponse({'status': 'error', 'message': 'Método inválido'}, status=400)
@@ -378,7 +373,6 @@ def editar_validade(request, id):
 def inativar_validade(request, id):
     if request.method == 'POST':
         Validade.objects.filter(id=id).update(ativo=False, usuario_ultimo=request.user)
-        # CORREÇÃO: Resposta instantânea sem carregar a view pesada por trás
         return JsonResponse({'status': 'success'})
         
     return JsonResponse({'status': 'error', 'message': 'Método inválido'}, status=400)
@@ -390,7 +384,6 @@ def ruptura_list(request):
     perfil = request.user.perfil
     lojas_permitidas = perfil.get_lojas_acessiveis()
 
-    # 1. Parâmetros da requisição / Filtros
     filtro_status = request.GET.get('status', '').strip()
     filtro_loja = request.GET.get('loja', '').strip()
     query = request.GET.get('q', '').strip()
@@ -398,20 +391,16 @@ def ruptura_list(request):
     if per_page not in ['50', '100', '200', '500']:
         per_page = '50'
 
-    # 2. QuerySet Base Otimizado usando "loja_id"
     rupturas_qs = Ruptura.objects.filter(
         loja_id__in=lojas_permitidas
     ).select_related('produto', 'loja_id', 'criado_por')
 
-    # 3. Filtro por Loja Específica
     if filtro_loja:
         rupturas_qs = rupturas_qs.filter(loja_id__cod_loja=filtro_loja)
 
-    # 4. Filtro por Status
     if filtro_status:
         rupturas_qs = rupturas_qs.filter(status=filtro_status)
 
-    # 5. Filtro Textual
     if query:
         rupturas_qs = rupturas_qs.filter(
             Q(produto__desc_produto__icontains=query) |
@@ -420,12 +409,10 @@ def ruptura_list(request):
             Q(observacao_loja__icontains=query)
         )
 
-    # 6. Ordenação nativa e Paginação
     rupturas_qs = rupturas_qs.order_by('-data_cadastro')
     paginator = Paginator(rupturas_qs, int(per_page))
     page_obj = paginator.get_page(request.GET.get('page'))
 
-    # 6.1. Cálculo dinâmico de dias em aberto
     hoje = timezone.now()
     for r in page_obj.object_list:
         if r.data_cadastro:
@@ -434,11 +421,9 @@ def ruptura_list(request):
         else:
             r.dias_cadastrado = 0
 
-    # 7. Regra de perfil para o modal de alteração de status
-    grupos_gestao = ['Administrador', 'Diretoria', 'Comprador']
-    e_gestor_ou_comprador = request.user.is_superuser or request.user.groups.filter(name__in=grupos_gestao).exists()
+    # Uso da função centralizada para definir a permissão no template
+    e_gestor_ou_comprador = usuario_e_gestor_ou_comprador(request.user)
 
-    # 8. Consulta de Lojas para preencher o select do Modal e dos Filtros
     lojas_acesso = Loja.objects.filter(cod_loja__in=lojas_permitidas.values_list('cod_loja', flat=True)).order_by('cod_loja')
 
     context = {
@@ -465,7 +450,6 @@ def cadastrar_ruptura(request):
         if produto_id and quantidade and loja_id:
             produto = get_object_or_404(Produto, pk=produto_id)
             
-            # Tenta buscar a loja pelo ID (pk) ou pelo código da loja (cod_loja)
             try:
                 loja = Loja.objects.get(pk=loja_id)
             except (Loja.DoesNotExist, ValueError):
@@ -473,7 +457,7 @@ def cadastrar_ruptura(request):
 
             Ruptura.objects.create(
                 produto=produto,
-                loja_id=loja,  # Atribui o objeto Loja corretamente ao campo do model
+                loja_id=loja,
                 quantidade_necessaria=quantidade,
                 observacao_loja=observacao,
                 criado_por=request.user
@@ -486,7 +470,6 @@ def cadastrar_ruptura(request):
 
 @login_required
 def buscar_produtos_ajax(request):
-    """Endpoint para busca em tempo real no modal"""
     term = request.GET.get('q', '')
     produtos = Produto.objects.filter(desc_produto__icontains=term) | Produto.objects.filter(cod_produto__icontains=term) | Produto.objects.filter(cod_gtin_principal__icontains=term)
     data = [{'id': p.id, 'codigo': p.codigo, 'nome': p.nome} for p in produtos[:20]]
@@ -495,6 +478,8 @@ def buscar_produtos_ajax(request):
 @login_required
 def atualizar_status_ruptura(request):
     if request.method == 'POST':
+        e_gestor_ou_comprador = usuario_e_gestor_ou_comprador(request.user)
+
         ruptura_id = request.POST.get('ruptura_id')
         novo_status = request.POST.get('novo_status')
         obs_comprador = request.POST.get('observacao_comprador')
@@ -502,10 +487,23 @@ def atualizar_status_ruptura(request):
 
         ruptura = get_object_or_404(Ruptura, id=ruptura_id)
 
+        # TRAVA RÍGIDA DE SEGURANÇA NO BACKEND:
+        # Se NÃO for Gestor/Comprador:
+        # 1. A ruptura DEVE estar no status 'RESOLVIDO'
+        # 2. O novo status enviado só pode ser 'FINALIZADO' ou 'EM_ABERTO' (reabertura pela loja)
+        if not e_gestor_ou_comprador:
+            if ruptura.status != 'RESOLVIDO' or novo_status not in ['FINALIZADO', 'EM_ABERTO']:
+                messages.error(request, "Você não tem permissão para alterar o status desta ruptura.")
+                return redirect('ruptura_list')
+
+        # Aplicação das alterações permitidas
         if novo_status:
             ruptura.status = novo_status
-        if obs_comprador is not None:
+            
+        # Apenas comprador/gestor pode preencher/alterar a observação do comprador
+        if obs_comprador is not None and e_gestor_ou_comprador:
             ruptura.observacao_comprador = obs_comprador
+            
         if obs_loja is not None:
             ruptura.observacao_loja = obs_loja
 

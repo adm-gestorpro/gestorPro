@@ -289,9 +289,9 @@
                     </select>
                 </div>
 
-                <div>
+                <div id="campo-obs-comprador">
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Observação do Comprador / Resposta</label>
-                    <textarea name="observacao_comprador" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white" placeholder="Informe detalhes do atendimento ou solução..."></textarea>
+                    <textarea name="observacao_comprador" id="input-obs-comprador" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white" placeholder="Informe detalhes do atendimento ou solução..."></textarea>
                 </div>
 
                 <div class="pt-4 mt-2 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3">
@@ -311,7 +311,6 @@
         <p class="text-slate-300 mt-2 text-sm">Por favor, aguarde enquanto salvamos as informações.</p>
     </div>
 
-    
 </div>
 {% endblock content %}
 
@@ -320,7 +319,7 @@
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
 <script>
-    // Flag do Python renderizada no JS para verificação do perfil
+    // Flag do Python renderizada com precisão Booleana
     const E_GESTOR_OU_COMPRADOR = {{ e_gestor_ou_comprador|yesno:"true,false" }};
 
     function showLoading() {
@@ -352,47 +351,47 @@
         }
     }
 
-    // Modal de Status com Regras de Transição por Perfil
+    // Modal de Status com Regras estritas por Perfil
     function abrirModalStatus(rupturaId, currentStatus) {
-        // Atualiza o ID no input hidden do formulário
         document.getElementById('modal-status-ruptura-id').value = rupturaId;
         
         const select = document.getElementById('select-novo-status');
-        select.innerHTML = ''; // Limpa as opções existentes
-        select.disabled = false; // Garante que o select não está bloqueado
+        const campoObsComprador = document.getElementById('campo-obs-comprador');
+        const inputObsComprador = document.getElementById('input-obs-comprador');
 
-        // REGRA 2: Se o status atual for 'RESOLVIDO' (Ação geralmente feita pela Loja)
-        if (currentStatus === 'RESOLVIDO') {
-            select.appendChild(new Option('Finalizado (Atendido / OK)', 'FINALIZADO'));
-            
-            // Verifique no seu models.py qual é a chave exata para "Pendente" 
-            // (Pode ser 'PENDENTE' ou voltar para 'EM_ABERTO')
-            select.appendChild(new Option('Pendente (Retornar para o Comprador)', 'PENDENTE')); 
-        } 
-        // REGRA 1: Se NÃO estiver resolvido e o usuário for Comprador/Admin
-        else if (E_GESTOR_OU_COMPRADOR) {
+        select.innerHTML = ''; 
+        select.disabled = false; 
+
+        // 1. Se for Gestor, Comprador ou Admin: Acesso aos status gerenciais
+        if (E_GESTOR_OU_COMPRADOR) {
             select.appendChild(new Option('Em Aberto', 'EM_ABERTO'));
-            
-            // Verifique no seu models.py se a chave é exatamente 'AGUARDANDO_FORNECEDOR'
             select.appendChild(new Option('Aguardando Fornecedor', 'AGUARDANDO_FORNECEDOR'));
-            
             select.appendChild(new Option('Resolvido', 'RESOLVIDO'));
+            select.appendChild(new Option('Cancelado', 'CANCELADO'));
             
-            // Tenta deixar o status atual selecionado por padrão (se ele estiver nas opções)
-            if (['EM_ABERTO', 'AGUARDANDO_FORNECEDOR', 'RESOLVIDO'].includes(currentStatus)) {
+            if (['EM_ABERTO', 'AGUARDANDO_FORNECEDOR', 'RESOLVIDO', 'CANCELADO'].includes(currentStatus)) {
                 select.value = currentStatus;
             }
+
+            if (campoObsComprador) campoObsComprador.style.display = 'block';
+            if (inputObsComprador) inputObsComprador.disabled = false;
         } 
-        // CENÁRIO EXTRA: Usuário de Loja tentando abrir uma ruptura que ainda não está resolvida
+        // 2. Se for Usuário Comum da Loja e o item estiver 'RESOLVIDO':
+        else if (currentStatus === 'RESOLVIDO') {
+            select.appendChild(new Option('Finalizado (Recebido na Loja)', 'FINALIZADO'));
+            select.appendChild(new Option('Pendente (Não chegou / Reabrir)', 'EM_ABERTO')); 
+
+            // Oculta/Desabilita a observação do comprador para o usuário comum
+            if (campoObsComprador) campoObsComprador.style.display = 'none';
+            if (inputObsComprador) inputObsComprador.disabled = true;
+        } 
+        // 3. Usuário comum em qualquer outro status (trava preventiva JS)
         else {
-            // A loja não pode alterar o status se não estiver "RESOLVIDO"
             select.appendChild(new Option(currentStatus, currentStatus));
-            select.disabled = true; // Bloqueia o campo para a loja
+            select.disabled = true; 
         }
 
-        // Lógica para abrir seu modal (ajuste conforme o framework CSS que está usando, ex: Bootstrap ou Tailwind)
-        // ex: document.getElementById('modal-status-ruptura').classList.remove('hidden');
-        abrirModal('modal-status-ruptura'); // Supondo que você já tenha essa função
+        abrirModal('modal-status-ruptura');
     }
 
     // Leitor de Barcode
