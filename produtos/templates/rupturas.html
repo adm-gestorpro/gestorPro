@@ -215,7 +215,7 @@
                         <option value="">Selecione a loja...</option>
                         {% for l in lojas_acesso %}
                             <option value="{{ l.id|default:l.cod_loja }}">
-                                Loja {{ l.cod_loja }} - {{ l.nome|default:l.nome_fantasia|default:"" }}
+                                Loja {{ l.nome|default:l.nome_fantasia|default:"" }}
                             </option>
                         {% endfor %}
                     </select>
