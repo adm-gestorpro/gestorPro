@@ -179,7 +179,7 @@ def cadastrar_lote(request):
     return render(request, 'controle_validade/validade_dashboard.html')
 
 @login_required
-@checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Gerente Distrital', 'Atendente/Vendedor'])
+@checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Líder de Loja', 'Gerente Distrital', 'Atendente/Vendedor'])
 def api_buscar_produtos(request):
     termo = request.GET.get('q', '').strip()
     
@@ -207,7 +207,7 @@ def api_buscar_produtos(request):
     return JsonResponse({'resultados': resultados})
 
 @login_required
-@checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Gerente Distrital', 'Atendente/Vendedor'])
+@checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Líder de Loja', 'Gerente Distrital', 'Atendente/Vendedor'])
 def controle_validade(request):
     perfil = request.user.perfil
     lojas_permitidas = perfil.get_lojas_acessiveis()
@@ -310,7 +310,7 @@ def controle_validade(request):
     return render(request, 'controle_validade/validade_dashboard.html', context)
 
 @login_required
-@checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Gerente Distrital', 'Atendente/Vendedor'])
+@checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Líder de Loja', 'Gerente Distrital', 'Atendente/Vendedor'])
 def cadastrar_validade(request):
     if request.method == 'POST':
         dados = request.POST.dict()
@@ -349,7 +349,7 @@ def cadastrar_validade(request):
     return redirect('controle_validade')
 
 @login_required
-@checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Gerente Distrital'])
+@checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Gerente Distrital', 'Líder de Loja'])
 def editar_validade(request, id):
     if request.method == 'PUT':
         put_data = QueryDict(request.body)
@@ -369,7 +369,7 @@ def editar_validade(request, id):
     return JsonResponse({'status': 'error', 'message': 'Método inválido'}, status=400)
 
 @login_required
-@checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Gerente Distrital'])
+@checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Gerente Distrital', 'Líder de Loja'])
 def inativar_validade(request, id):
     if request.method == 'POST':
         Validade.objects.filter(id=id).update(ativo=False, usuario_ultimo=request.user)
@@ -379,7 +379,7 @@ def inativar_validade(request, id):
 
 
 @login_required
-@checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Gerente Distrital', 'Atendente/Vendedor', 'Comprador'])
+@checa_multiplos_grupos_403(['Administrador', 'Diretoria', 'Gerente de Loja', 'Líder de Loja', 'Gerente Distrital', 'Atendente/Vendedor', 'Comprador'])
 def ruptura_list(request):
     perfil = request.user.perfil
     lojas_permitidas = perfil.get_lojas_acessiveis()
