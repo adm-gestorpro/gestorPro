@@ -16,6 +16,15 @@ class UserAdmin(BaseUserAdmin):
     # Define as colunas explicitamente
     list_display = ('username', 'email', 'first_name', 'is_staff', 'exibir_redes', 'exibir_lojas', 'exibir_vendedor')
 
+    # Adiciona os novos campos na tela de edição do usuário no Admin
+    fieldsets = BaseUserAdmin.fieldsets + (
+        ('Informações Adicionais', {'fields': ('token', 'foto')}),
+    )
+    # Adiciona os novos campos no formulário de criação de usuário no Admin
+    add_fieldsets = BaseUserAdmin.add_fieldsets + (
+        ('Informações Adicionais', {'fields': ('token', 'foto')}),
+    )
+
     @admin.display(description='Redes')
     def exibir_redes(self, obj):
         # Tenta buscar usando o modelo diretamente para não errar o related_name

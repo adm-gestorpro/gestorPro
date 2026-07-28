@@ -31,6 +31,8 @@ class PerfilUsuario(models.Model):
     lojas = models.ManyToManyField(Loja, blank=True, related_name="perfis_lojas")
     redes = models.ManyToManyField(Rede, blank=True, related_name="perfis_redes")
     vendedor = models.ManyToManyField('vendas.Vendedor', blank=True, related_name="perfis_vendedores")
+    token = models.CharField(max_length=255, blank=True, null=True)
+    foto = models.ImageField(upload_to='perfis/', blank=True, null=True)
 
     def __str__(self):
         return f"{self.user.first_name}"
