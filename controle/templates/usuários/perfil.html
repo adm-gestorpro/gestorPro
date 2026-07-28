@@ -13,7 +13,11 @@
             
             <div class="px-6 pb-6 text-center -mt-10">
                 <div class="relative inline-block mb-3">
-                    <img src="https://ui-avatars.com/api/?name={{ request.user.first_name|default:request.user.username }}&background=3b82f6&color=fff&size=120" 
+                    {% if user.foto %}
+                        <img src="{{ user.foto.url }}" 
+                    {% else %}
+                        <img src="https://ui-avatars.com/api/?name={{ request.user.first_name|default:request.user.username }}&background=3b82f6&color=fff&size=120" 
+                    {% endif %}
                          class="rounded-full w-24 h-24 mx-auto border-4 border-white dark:border-slate-800 shadow-md object-cover" alt="Foto de Perfil">
                     <button class="absolute bottom-0 right-0 bg-primary-500 hover:bg-primary-600 text-white rounded-full w-8 h-8 flex items-center justify-center border-2 border-white dark:border-slate-800 transition-all duration-200 shadow-sm" title="Alterar foto">
                         <i class="fa-solid fa-camera text-xs"></i>

@@ -119,7 +119,7 @@ def perfil_usuario(request):
                 messages.success(request, "Sua senha foi alterada com sucesso!")
                 return redirect(perfil_usuario)
 
-    return render(request, 'usuários/perfil.html')
+    return render(request, 'usuários/perfil.html', {'user': user})
 
 @login_required
 def configuracoes_usuario(request):
