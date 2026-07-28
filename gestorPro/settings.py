@@ -178,6 +178,12 @@ SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 
+# URL que aparecerá no navegador (ex: http://127.0.0.1:8000/media/perfis/foto.jpg)
+MEDIA_URL = '/media/'
+
+# Caminho no disco do servidor onde os arquivos realmente ficarão salvos
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 
 # #Caminho para o arquivo JSON de credenciais
 # FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'firebase-credentials.json')

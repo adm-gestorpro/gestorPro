@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.urls import path, include
 from django.contrib.staticfiles.views import serve
 
@@ -24,3 +26,7 @@ urlpatterns = [
 
     path('sw.js', serve, {'path': 'js/sw.js'}),
 ]
+
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
