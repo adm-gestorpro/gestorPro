@@ -13,8 +13,23 @@ class PerfilUsuarioInline(admin.StackedInline):
 class UserAdmin(BaseUserAdmin):
     inlines = (PerfilUsuarioInline,)
     
-    # Define as colunas explicitamente
-    list_display = ('username', 'email', 'first_name', 'is_staff', 'exibir_redes', 'exibir_lojas', 'exibir_vendedor')
+    list_display = (
+        'username', 
+        'email', 
+        'first_name', 
+        'is_staff', 
+        'get_groups', 
+        'exibir_redes', 
+        'exibir_lojas', 
+        'exibir_vendedor'
+    )
+
+    @admin.display(description='Grupos')
+    def get_groups(self, obj):
+        grupos = obj.groups.all()
+        if grupos.exists():
+            return ", ".join([group.name for group in grupos])
+        return "Sem Grupo"
 
     @admin.display(description='Redes')
     def exibir_redes(self, obj):
