@@ -1,0 +1,566 @@
+{% extends 'base.html' %}
+
+{% block title %}Comparativo de Preços | GestorPro{% endblock %}
+{% block page_name %}Comparativo{% endblock %}
+
+{% block content %}
+<!-- Container Principal: Trava a altura exata da tela visível levando em conta o base.html -->
+<div class="flex flex-col h-[calc(100vh-7rem)] gap-4 animate-fade-in overflow-hidden">
+    
+    <!-- Cabeçalho da Página (Fixo: não encolhe) -->
+    <div class="flex-shrink-0 flex items-center justify-between">
+        <div>
+            <h2 class="text-xl md:text-2xl font-bold text-slate-900 dark:text-white">Comparativo de Precificação </h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Análise tributária e margens de lucro sobre a linha de produtos.</p>
+        </div>
+    </div>
+
+    <!-- Card de Filtros de Pesquisa (Fixo: não encolhe) -->
+    <div class="flex-shrink-0 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+        <div class="border-b border-slate-200 dark:border-slate-700">
+            <ul class="flex flex-wrap -mb-px text-sm font-medium text-center text-slate-500 dark:text-slate-400" id="searchTabs" data-tabs-toggle="#searchTabsContent" role="tablist">
+                <li class="mr-2" role="presentation">
+                    <button class="inline-block p-3 border-b-2 rounded-t-lg hover:text-slate-600 hover:border-slate-300 dark:hover:text-slate-300" id="produtos-tab" data-tabs-target="#produtos" type="button" role="tab" aria-controls="produtos" aria-selected="true">
+                        <i class="fa-solid fa-paw mr-2"></i>Múltiplos Produtos
+                    </button>
+                </li>
+                <li class="mr-2" role="presentation">
+                    <button class="inline-block p-3 border-b-2 border-transparent rounded-t-lg hover:text-slate-600 hover:border-slate-300 dark:hover:text-slate-300" id="nfe-tab" data-tabs-target="#nfe" type="button" role="tab" aria-controls="nfe" aria-selected="false">
+                        <i class="fa-solid fa-file-invoice mr-2"></i>Chave NFe
+                    </button>
+                </li>
+                <li class="mr-2" role="presentation">
+                    <button class="inline-block p-3 border-b-2 border-transparent rounded-t-lg hover:text-slate-600 hover:border-slate-300 dark:hover:text-slate-300" id="fornecedor-tab" data-tabs-target="#fornecedor" type="button" role="tab" aria-controls="fornecedor" aria-selected="false">
+                        <i class="fa-solid fa-industry mr-2"></i>Fornecedor / Fabricante
+                    </button>
+                </li>
+                <li role="presentation">
+                    <button class="inline-block p-3 border-b-2 border-transparent rounded-t-lg hover:text-slate-600 hover:border-slate-300 dark:hover:text-slate-300" id="taxonomia-tab" data-tabs-target="#taxonomia" type="button" role="tab" aria-controls="taxonomia" aria-selected="false">
+                        <i class="fa-solid fa-sitemap mr-2"></i>Departamento / Seção
+                    </button>
+                </li>
+            </ul>
+        </div>
+        
+        <div id="searchTabsContent" class="p-3 md:p-4">
+            <!-- Aba Múltiplos Produtos -->
+            <div class="hidden" id="produtos" role="tabpanel" aria-labelledby="produtos-tab">
+                <form method="GET" class="flex flex-col md:flex-row gap-3 items-end">
+                    <input type="hidden" name="tipo_busca" value="multi_produto">
+                    <div class="w-full md:w-2/3">
+                        <label class="block mb-1 text-xs font-medium text-slate-900 dark:text-white">Pesquisar Produto Pet (Descrição, Cód. Interno ou EAN)</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <i class="fa-solid fa-barcode text-slate-400"></i>
+                            </div>
+                            <input type="text" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2 dark:bg-slate-800 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Ex: Royal Canin, Bravecto, Whiskas...">
+                        </div>
+                    </div>
+                    <button type="button" class="w-full md:w-auto text-slate-900 bg-white border border-slate-300 focus:outline-none hover:bg-slate-100 font-medium rounded-lg text-sm px-4 py-2 dark:bg-slate-800 dark:text-white dark:border-slate-600 dark:hover:bg-slate-700 transition-colors">
+                        Adicionar
+                    </button>
+                    <button type="submit" class="w-full md:w-auto text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800 transition-colors">
+                        Calcular Grade
+                    </button>
+                </form>
+            </div>
+
+            <!-- Aba NFe -->
+            <div class="hidden" id="nfe" role="tabpanel" aria-labelledby="nfe-tab">
+                <form method="GET" class="flex flex-col md:flex-row gap-3 items-end">
+                    <input type="hidden" name="tipo_busca" value="nfe">
+                    <div class="w-full md:w-2/3">
+                        <label class="block mb-1 text-xs font-medium text-slate-900 dark:text-white">Chave de Acesso da NFe</label>
+                        <input type="text" name="chave_nfe" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2 dark:bg-slate-800 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white font-mono" placeholder="Digite os 44 dígitos da nota" maxlength="44">
+                    </div>
+                    <button type="submit" class="w-full md:w-auto text-white bg-primary-600 hover:bg-primary-700 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 transition-colors">
+                        Carregar NFe
+                    </button>
+                </form>
+            </div>
+            
+            <div class="hidden" id="fornecedor" role="tabpanel" aria-labelledby="fornecedor-tab">
+                <p class="text-xs text-slate-500 dark:text-slate-400">Pesquisa por distribuidores de produtos pet.</p>
+            </div>
+            <div class="hidden" id="taxonomia" role="tabpanel" aria-labelledby="taxonomia-tab">
+                <p class="text-xs text-slate-500 dark:text-slate-400">Pesquisa por departamento (Cães, Gatos, Aves, Higiene, Farmácia).</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container da Tabela: Absorve dinamicamente todo o espaço restante e controla a rolagem -->
+    <div class="flex-1 min-h-0 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden">
+        <div class="flex-1 overflow-x-auto overflow-y-auto">
+            <table class="w-full text-sm text-left text-slate-600 dark:text-slate-300" id="tabelaComparativo">
+                <!-- Cabeçalho Fixo -->
+                <thead class="text-xs text-slate-700 uppercase bg-slate-100 dark:bg-slate-800 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap sticky top-0 z-10 shadow-sm">
+                    <tr>
+                        <th scope="col" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800">Cód.</th>
+                        <th scope="col" class="px-4 py-2.5 min-w-[260px] bg-slate-100 dark:bg-slate-800">Descrição do Produto</th>
+                        <th scope="col" class="px-4 py-2.5 text-right bg-slate-100 dark:bg-slate-800">Qtd Est.</th>
+                        <th scope="col" class="px-4 py-2.5 text-right bg-slate-100 dark:bg-slate-800">Federais (%)</th>
+                        <th scope="col" class="px-4 py-2.5 text-right bg-slate-100 dark:bg-slate-800">Estaduais (%)</th>
+                        <th scope="col" class="px-4 py-2.5 text-right bg-slate-200/60 dark:bg-slate-700/60">Custo (R$)</th>
+                        <th scope="col" class="px-4 py-2.5 text-right bg-slate-200/60 dark:bg-slate-700/60">Margem Pad.</th>
+                        <th scope="col" class="px-4 py-2.5 text-right bg-slate-200/60 dark:bg-slate-700/60">Preço Sugerido</th>
+                        <th scope="col" class="px-4 py-2.5 text-right bg-slate-100 dark:bg-slate-800">Margem Atual</th>
+                        <th scope="col" class="px-4 py-2.5 text-right font-bold bg-slate-100 dark:bg-slate-800">Preço Atual</th>
+                        <th scope="col" class="px-4 py-2.5 text-right font-bold bg-slate-100 dark:bg-slate-800">Dif. Total (R$)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                    
+                    <!-- 1 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET001</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">RAÇÃO ROYAL CANIN MINI ADULT 2,5KG</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">45</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">9,25%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">95,00</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">150,32</td>
+                        <td class="px-4 py-2 text-right">40,60%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">159,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 2 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET002</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">RAÇÃO PEDIGREE ADULTOS RAÇAS MÉDIAS 15KG</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">30</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">9,25%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">110,00</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">174,05</td>
+                        <td class="px-4 py-2 text-right">35,30%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">169,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 3 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET003</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">ANTIPULGAS E CARRAPATOS BRAVECTO 10 A 20KG</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">18</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">0,00%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">140,00</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">221,52</td>
+                        <td class="px-4 py-2 text-right">39,10%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">229,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 4 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET004</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">RAÇÃO WHISKAS GATOS ADULTOS CARNE 3KG</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">60</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">9,25%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">38,00</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">60,13</td>
+                        <td class="px-4 py-2 text-right">36,60%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">59,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 5 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET005</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">AREIA SANITÁRIA PIPICAT CLASSIC 4KG</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">120</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">0,00%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">11,50</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">18,20</td>
+                        <td class="px-4 py-2 text-right">42,20%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">19,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 6 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET006</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">SHAMPOO SANOL DOG PELOS CLAROS 500ML</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">40</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">9,25%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">12,00</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">18,99</td>
+                        <td class="px-4 py-2 text-right">33,00%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">17,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 7 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET007</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">TAPETE HIGIÊNICO ZEE.DOG ZEE.PAD 30 UNID</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">25</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">9,25%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">62,00</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">98,10</td>
+                        <td class="px-4 py-2 text-right">40,90%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">104,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 8 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET008</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">SACHÊ PURINA FRISKIES GATOS SALMÃO 85G</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">200</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">0,00%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">0,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">2,10</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">3,32</td>
+                        <td class="px-4 py-2 text-right">36,20%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">3,29</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 9 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET009</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">ANTIPULGAS SIMPARIC 20 A 40KG 80MG</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">15</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">0,00%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">0,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">82,00</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">129,75</td>
+                        <td class="px-4 py-2 text-right">36,90%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">129,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 10 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET010</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">RAÇÃO PREMIER FÓRMULA CÃES FILHOTES 15KG</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">22</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">9,25%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">145,00</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">229,43</td>
+                        <td class="px-4 py-2 text-right">34,10%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">219,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 11 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET011</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">BISCOITO DOG CHOW CARNE CÃES ADULTOS 500G</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">55</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">9,25%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">8,50</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">13,45</td>
+                        <td class="px-4 py-2 text-right">41,40%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">14,50</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 12 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET012</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">COLEIRA ANTIPULGAS SCALIBOR 65CM</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">12</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">0,00%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">75,00</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">118,67</td>
+                        <td class="px-4 py-2 text-right">34,80%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">115,00</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 13 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET013</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">RAÇÃO GOLDEN FORMULA CÃES ADULTOS CARNE 15KG</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">35</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">9,25%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">98,00</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">155,06</td>
+                        <td class="px-4 py-2 text-right">38,70%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">159,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 14 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET014</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">SACHÊ PEDIGREE CÃES RAÇAS PEQUENAS 100G</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">150</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">0,00%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">0,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">2,30</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">3,64</td>
+                        <td class="px-4 py-2 text-right">34,10%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">3,49</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 15 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET015</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">ARRANHADOR PARA GATOS COM BOLINHA CATBOM</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">14</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">9,25%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">35,00</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">55,38</td>
+                        <td class="px-4 py-2 text-right">41,60%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">59,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 16 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET016</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">COMEDOURO ERGONÔMICO ERGOCAT 250ML</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">28</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">9,25%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">12,80</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">20,25</td>
+                        <td class="px-4 py-2 text-right">35,70%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">19,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 17 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET017</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">RAÇÃO SPECIAL CAT CASTRADOS FRANGO 10KG</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">20</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">9,25%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">78,00</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">123,42</td>
+                        <td class="px-4 py-2 text-right">37,60%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">124,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 18 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET018</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">CORTADOR DE UNHAS CÃES E GATOS CHAL-PET</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">16</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">9,25%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">0,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">15,00</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">23,73</td>
+                        <td class="px-4 py-2 text-right">39,80%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">24,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 19 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET019</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">GUIA E PEITORAL ZEE.DOG ADJUSTABLE LARGE</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">10</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">9,25%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">68,00</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">107,59</td>
+                        <td class="px-4 py-2 text-right">43,30%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">119,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 20 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET020</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">ELIMINADOR DE ODORES HERBAL SANOL PET 2L</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">32</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">9,25%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">16,50</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">26,11</td>
+                        <td class="px-4 py-2 text-right">33,70%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">24,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 21 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET021</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">RAÇÃO MAGNUS TODO DIA CÃES ADULTOS 15KG</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">24</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">0,00%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">65,00</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">102,85</td>
+                        <td class="px-4 py-2 text-right">34,90%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">99,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 22 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET022</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">OSSO BONEAPETIT MORDEDOR CANINO 3 UNID</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">80</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">0,00%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">0,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">7,20</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">11,39</td>
+                        <td class="px-4 py-2 text-right">42,40%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">12,50</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 23 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET023</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">RAÇÃO NUTRIPET PÁSSAROS MALHA FINA 500G</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">40</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">0,00%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">0,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">4,50</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">7,12</td>
+                        <td class="px-4 py-2 text-right">35,60%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">6,99</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 24 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET024</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">CAMA PET MANGUEZAL TECIDO TAM G</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">8</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">9,25%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">52,00</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">82,28</td>
+                        <td class="px-4 py-2 text-right">42,20%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">89,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                    <!-- 25 -->
+                    <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-4 py-2 font-mono text-xs">PET025</td>
+                        <td class="px-4 py-2 font-medium text-slate-900 dark:text-white">CAIXA DE TRANSPORTE PANTHER PET TAM 2</td>
+                        <td class="px-4 py-2 text-right qtd-estoque">11</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">9,25%</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-500">19,00%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">48,00</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50">36,80%</td>
+                        <td class="px-4 py-2 text-right bg-slate-50 dark:bg-slate-800/50 preco-sugestao font-medium">75,95</td>
+                        <td class="px-4 py-2 text-right">34,20%</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-900 dark:text-white preco-atual">72,90</td>
+                        <td class="px-4 py-2 text-right font-bold diferenca-valor">-</td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Totalizador (Fixo: não encolhe) -->
+    <div class="flex-shrink-0 bg-slate-100 dark:bg-slate-800/50 rounded-xl p-4 md:p-5 border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-center shadow-inner">
+        <div>
+            <h4 class="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Impacto Financeiro Total no Estoque</h4>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Soma das diferenças multiplicadas pela quantidade de cada item em estoque (Sobra / Quebra)</p>
+        </div>
+        <div class="mt-2 md:mt-0 text-right">
+            <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight" id="totalizadorDiferenca">R$ 0,00</h2>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    calcularTotalizador();
+
+    function calcularTotalizador() {
+        let totalDiferencaEstoque = 0;
+        const linhas = document.querySelectorAll('#tabelaComparativo tbody tr');
+
+        linhas.forEach(linha => {
+            const qtdEl = linha.querySelector('.qtd-estoque');
+            const sugestaoEl = linha.querySelector('.preco-sugestao');
+            const atualEl = linha.querySelector('.preco-atual');
+            const diferencaEl = linha.querySelector('.diferenca-valor');
+
+            if (qtdEl && sugestaoEl && atualEl && diferencaEl) {
+                const formatarNumero = (texto) => parseFloat(texto.replace(/\./g, '').replace(',', '.'));
+                
+                const quantidade = formatarNumero(qtdEl.textContent) || 0;
+                const precoSugestao = formatarNumero(sugestaoEl.textContent) || 0;
+                const precoAtual = formatarNumero(atualEl.textContent) || 0;
+                
+                // Diferença Total do Item = (Preço Atual - Preço Sugerido) * Quantidade
+                const diferencaUnitaria = precoAtual - precoSugestao;
+                const diferencaTotalItem = diferencaUnitaria * quantidade;
+                
+                totalDiferencaEstoque += diferencaTotalItem; 
+
+                // Formatação visual da célula de diferença na linha
+                diferencaEl.textContent = diferencaTotalItem.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                
+                diferencaEl.classList.remove('text-emerald-600', 'dark:text-emerald-400', 'text-rose-600', 'dark:text-rose-400', 'text-slate-500');
+
+                if (diferencaTotalItem > 0.01) {
+                    diferencaEl.classList.add('text-emerald-600', 'dark:text-emerald-400');
+                } else if (diferencaTotalItem < -0.01) {
+                    diferencaEl.classList.add('text-rose-600', 'dark:text-rose-400');
+                } else {
+                    diferencaEl.classList.add('text-slate-500');
+                }
+            }
+        });
+
+        // Atualiza o card totalizador no rodapé
+        const totalizadorEl = document.getElementById('totalizadorDiferenca');
+        totalizadorEl.textContent = totalDiferencaEstoque.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        
+        totalizadorEl.classList.remove('text-emerald-600', 'dark:text-emerald-400', 'text-rose-600', 'dark:text-rose-400', 'text-slate-900', 'dark:text-white');
+        
+        if (totalDiferencaEstoque > 0.01) {
+            totalizadorEl.classList.add('text-emerald-600', 'dark:text-emerald-400');
+        } else if (totalDiferencaEstoque < -0.01) {
+            totalizadorEl.classList.add('text-rose-600', 'dark:text-rose-400');
+        } else {
+            totalizadorEl.classList.add('text-slate-900', 'dark:text-white');
+        }
+    }
+});
+</script>
+{% endblock %}

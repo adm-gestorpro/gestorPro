@@ -43,6 +43,7 @@ class Validade(models.Model):
 
 
 class Ruptura(models.Model):
+    
     STATUS_CHOICES = [
         ('EM_ABERTO', 'Em Aberto'),
         ('AGUARDANDO_FORNECEDOR', 'Aguardando Fornecedor'),
@@ -72,3 +73,10 @@ class Ruptura(models.Model):
 
     def __str__(self):
         return f"Ruptura #{self.id} - {self.produto.desc_produto} ({self.get_status_display()})"
+
+
+class ArvoreMercadologica(models.Model):
+    categoria_bluesoft = models.IntegerField(primary_key=True, verbose_name='Código-chave da categoria na BlueSoft')
+    categoria_pai_bluesoft = models.IntegerField(null=True, verbose_name='Código-chave da categoria na BlueSoft')
+    tipo_categoria = models.CharField(max_length=100, verbose_name='Tipo de categoria')
+    nome_categoria = models.CharField(max_length=500, verbose_name='Nome da categoria')

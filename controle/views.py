@@ -25,6 +25,7 @@ from .scripts.atualizar_produtos import atualiza_produtos
 from .scripts.atualizar_vendas import atualiza_pedido_balcao, atualiza_vendas_online
 from .scripts.atualizar_vendedores import atualiza_vendedores
 
+from .scripts.cadastros import arvore_mercadologica
 
 def mensagem():
     hora = datetime.now().hour
@@ -146,7 +147,7 @@ def agenda(request):
 def dashboard(request):
     usuario = request.session.get('user', request.user.username)
     context = {'user': usuario, 'mensagem': mensagem()}
-    return render(request, 'dashboard.html', context)
+    return render(request, 'home_page.html', context)
 
 
 @login_required
@@ -231,6 +232,14 @@ def atualizar_pedido_balcao(request):
     if request.method == 'POST':
         threading.Thread(target=atualiza_pedido_balcao).start()
         messages.info(request, "A atualização de pedidos de balcão foi iniciada em segundo plano.")
+    return redirect(atualizacoes)
+
+@login_required
+@checa_multiplos_grupos_403(['Administrador'])
+def atualizar_arvore_mercadologica(request):
+    if request.method == 'POST':
+        threading.Thread(target=arvore_mercadologica).start()
+        messages.info(request, "A atualização da árvore mercadológica foi iniciada em segundo plano.")
     return redirect(atualizacoes)
 
 

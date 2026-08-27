@@ -38,6 +38,14 @@
                     Atualizar vendedores
                 </button>
             </form>
+
+            <form method="POST" action="{% url 'atualizar_arvore_mercadologica' %}" class="flex justify-between items-center gap-2 flex-wrap mb-4">
+                {% csrf_token %}
+                <span class="text-sm">Atualizar árvore mercadológica</span>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors btn-processar" onclick="openModal()">
+                    Atualizar árvore mercadológica
+                </button>
+            </form>
         </div>
 
         <div class="col-span-1">

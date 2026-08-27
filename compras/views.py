@@ -5,12 +5,49 @@ from django.shortcuts import render
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.views import View
 
 from produtos.models import Produto
 from controle.models import Loja, Rede
 
 from controle.scripts.consulta_pedido_nf import consulta_nfe_bluesoft, consulta_pedido_compra_bluesoft
 
+
+class ProdutoComparativoView(View):
+    template_name = 'comparativo_precos.html'
+
+    def get(self, request, *args, **kwargs):
+        # Parâmetros de busca
+        tipo_busca = request.GET.get('tipo_busca', 'multi_produto')
+        chave_nfe = request.GET.get('chave_nfe')
+        
+        produtos = []
+        is_nfe = False
+
+        if tipo_busca == 'nfe' and chave_nfe:
+            is_nfe = True
+            # Lógica para buscar os itens vinculados à Chave de Acesso da NFe
+            # produtos = ItemNotaFiscal.objects.filter(nota__chave=chave_nfe).select_related('produto', 'nota__fornecedor')
+            
+        elif tipo_busca == 'multi_produto':
+            # Lógica para busca por código interno, barras ou descrição
+            # produtos = Produto.objects.filter(...)
+            pass
+            
+        elif tipo_busca == 'fornecedor':
+            # Lógica para busca por fornecedor/fabricante
+            pass
+            
+        elif tipo_busca == 'taxonomia':
+            # Lógica para busca por depto, seção, grupo, subgrupo
+            pass
+
+        context = {
+            'produtos': produtos,
+            'is_nfe': is_nfe,
+            'tipo_busca': tipo_busca,
+        }
+        return render(request, self.template_name, context)
 
 def normalizar_codigo(codigo):
     """Remove zeros à esquerda e espaços para permitir cruzamento exato."""
@@ -49,7 +86,7 @@ def extrair_itens_nfe(xml_content):
             q_com = float(prod.findtext('nfe:qCom', '0', ns) or prod.findtext('qCom', '0'))
             v_un_com = float(prod.findtext('nfe:vUnCom', '0', ns) or prod.findtext('vUnCom', '0'))
 
-            if not c_ean or c_ean.strip().upper() == 'SEMGTIN':
+            if not c_ean or c_ean.strip().upper() == 'SEMGTIN' or c_ean.strip().upper() == 'SEM GTIN' or c_ean.strip().upper() == 'SEM_GTIN':
                 c_ean = c_prod.strip()
 
             itens.append({
@@ -66,7 +103,8 @@ def extrair_itens_nfe(xml_content):
 def comparar_pedido_nfe(pedido_api, itens_nfe, loja_selecionada=None):
     """
     Cruza os itens do Pedido de Compra da API com o XML da NF-e.
-    Garante isolamento absoluto de quantidades por produto.
+    Garante isolamento absoluto de quantidades por produto e separa 
+    divergências de Quantidade e de Valor.
     """
     if isinstance(pedido_api, list) and len(pedido_api) > 0:
         pedido_data = pedido_api[0]
@@ -154,7 +192,6 @@ def comparar_pedido_nfe(pedido_api, itens_nfe, loja_selecionada=None):
                         norm_ex = normalizar_codigo(s_extra)
                         if norm_ex: chaves_item.add(norm_ex)
 
-            # Apenas referências de SKU do item (removido 'codigo_fornecedor' para evitar colisão)
             for campo_sku in ['referencia_fornecedor', 'sku']:
                 val_sku = getattr(produto_db, campo_sku, None)
                 if val_sku and str(val_sku).strip().upper() not in INVALIDOS:
@@ -174,7 +211,6 @@ def comparar_pedido_nfe(pedido_api, itens_nfe, loja_selecionada=None):
                 break
 
         if item_existente:
-            # Soma APENAS se for o mesmo produto (ex: entregas fracionadas)
             item_existente['qtd_pedido'] += qtd_ped
             item_existente['chaves'].update(chaves_finais)
         else:
@@ -189,7 +225,7 @@ def comparar_pedido_nfe(pedido_api, itens_nfe, loja_selecionada=None):
                 'chaves': chaves_finais
             })
 
-    # ETAPA 2: Indexação para busca rápida pelo XML (Apenas mapeia leituras, NUNCA altera quantidades)
+    # ETAPA 2: Indexação para busca rápida pelo XML
     mapa_pedido = {}
     for item_info in itens_pedido_lista:
         for chave in item_info['chaves']:
@@ -197,9 +233,12 @@ def comparar_pedido_nfe(pedido_api, itens_nfe, loja_selecionada=None):
                 mapa_pedido[chave] = item_info
 
     # ETAPA 3: Confronto dos itens do XML da NF-e
-    divergencias = []
+    divergencias_qtd = []
+    divergencias_valor = []
     itens_corretos = []
-    impacto_financeiro_total = 0.0
+    
+    impacto_financeiro_qtd = 0.0
+    impacto_financeiro_valor = 0.0
 
     for item_nfe in itens_nfe:
         cod_xml = item_nfe.get('codigo_fornecedor', '')
@@ -222,9 +261,9 @@ def comparar_pedido_nfe(pedido_api, itens_nfe, loja_selecionada=None):
 
         if not item_ped:
             impacto = qtd_nf * vlr_nf
-            impacto_financeiro_total += impacto
+            impacto_financeiro_qtd += impacto
 
-            divergencias.append({
+            divergencias_qtd.append({
                 'codigo_fornecedor': cod_xml,
                 'ean': ean_xml,
                 'descricao': item_nfe.get('descricao', ''),
@@ -232,7 +271,8 @@ def comparar_pedido_nfe(pedido_api, itens_nfe, loja_selecionada=None):
                 'qtd_nf': qtd_nf,
                 'qtd_pedido': 0.0,
                 'valor_nf': vlr_nf,
-                'valor_pedido': 0.0
+                'valor_pedido': 0.0,
+                'impacto': impacto
             })
             continue
 
@@ -240,32 +280,52 @@ def comparar_pedido_nfe(pedido_api, itens_nfe, loja_selecionada=None):
         qtd_ped = item_ped['qtd_pedido']
         vlr_ped = item_ped['custo_pedido']
 
-        motivos = []
+        teve_divergencia = False
 
+        # Validação de Quantidade
         if abs(qtd_nf - qtd_ped) > 0.0001:
+            teve_divergencia = True
             diferenca_qtd = qtd_nf - qtd_ped
+            impacto_q = 0.0
             if diferenca_qtd > 0:
-                impacto_financeiro_total += (diferenca_qtd * vlr_nf)
-            motivos.append(f"Quantidade divergente (Faturado: {qtd_nf:.2f} / Pedido: {qtd_ped:.2f})")
-
-        if abs(vlr_nf - vlr_ped) > 0.01:
-            diferenca_vlr = (vlr_nf - vlr_ped) * qtd_nf
-            if diferenca_vlr > 0:
-                impacto_financeiro_total += diferenca_vlr
-            motivos.append(f"Custo unitário divergente (NF: R$ {vlr_nf:.2f} / Pedido: R$ {vlr_ped:.2f})")
-
-        if motivos:
-            divergencias.append({
+                impacto_q = diferenca_qtd * vlr_nf
+                impacto_financeiro_qtd += impacto_q
+                
+            divergencias_qtd.append({
                 'codigo_fornecedor': cod_xml,
                 'ean': ean_xml,
                 'descricao': item_nfe.get('descricao', ''),
-                'motivo_divergencia': " | ".join(motivos),
+                'motivo_divergencia': f"Qtd. divergente (NF: {qtd_nf:.2f} / Pedido: {qtd_ped:.2f})",
                 'qtd_nf': qtd_nf,
                 'qtd_pedido': qtd_ped,
                 'valor_nf': vlr_nf,
-                'valor_pedido': vlr_ped
+                'valor_pedido': vlr_ped,
+                'impacto': impacto_q
             })
-        else:
+
+        # Validação de Valor/Custo
+        if abs(vlr_nf - vlr_ped) > 0.01:
+            teve_divergencia = True
+            diferenca_vlr = vlr_nf - vlr_ped
+            impacto_v = 0.0
+            if diferenca_vlr > 0:
+                impacto_v = diferenca_vlr * qtd_nf
+                impacto_financeiro_valor += impacto_v
+                
+            divergencias_valor.append({
+                'codigo_fornecedor': cod_xml,
+                'ean': ean_xml,
+                'descricao': item_nfe.get('descricao', ''),
+                'motivo_divergencia': f"Custo divergente (NF: R$ {vlr_nf:.2f} / Pedido: R$ {vlr_ped:.2f})",
+                'qtd_nf': qtd_nf,
+                'qtd_pedido': qtd_ped,
+                'valor_nf': vlr_nf,
+                'valor_pedido': vlr_ped,
+                'impacto': impacto_v
+            })
+
+        # Se passou limpo nas duas, está correto
+        if not teve_divergencia:
             itens_corretos.append({
                 'codigo_fornecedor': cod_xml,
                 'ean': ean_xml,
@@ -276,7 +336,7 @@ def comparar_pedido_nfe(pedido_api, itens_nfe, loja_selecionada=None):
                 'preco_pedido': vlr_ped
             })
 
-    # ETAPA 4: Itens do pedido que NÃO vieram faturados no XML
+    # ETAPA 4: Itens do pedido que NÃO vieram faturados no XML (Faltantes - Divergência de Qtd)
     for item_ped in itens_pedido_lista:
         if not item_ped['processado']:
             produto_key = item_ped['produto_key']
@@ -297,7 +357,7 @@ def comparar_pedido_nfe(pedido_api, itens_nfe, loja_selecionada=None):
                 if codigo_exibicao.isdigit():
                     codigo_exibicao = codigo_exibicao.lstrip('0') or '0'
 
-            divergencias.append({
+            divergencias_qtd.append({
                 'codigo_fornecedor': codigo_exibicao,
                 'ean': ean,
                 'descricao': descricao,
@@ -305,17 +365,25 @@ def comparar_pedido_nfe(pedido_api, itens_nfe, loja_selecionada=None):
                 'qtd_nf': 0.0,
                 'qtd_pedido': item_ped['qtd_pedido'],
                 'valor_nf': 0.0,
-                'valor_pedido': item_ped['custo_pedido']
+                'valor_pedido': item_ped['custo_pedido'],
+                'impacto': 0.0
             })
+
+    impacto_financeiro_total = impacto_financeiro_qtd + impacto_financeiro_valor
 
     return {
         'numero_pedido': pedido_data.get('numeroPedido'),
         'status_pedido': pedido_data.get('statusPedido'),
         'total_itens': len(itens_nfe),
-        'total_divergencias': len(divergencias),
+        'total_divergencias': len(divergencias_qtd) + len(divergencias_valor),
+        'total_divergencias_qtd': len(divergencias_qtd),
+        'total_divergencias_valor': len(divergencias_valor),
         'total_corretos': len(itens_corretos),
+        'impacto_financeiro_qtd': impacto_financeiro_qtd,
+        'impacto_financeiro_valor': impacto_financeiro_valor,
         'impacto_financeiro_total': impacto_financeiro_total,
-        'divergencias': divergencias,
+        'divergencias_qtd': divergencias_qtd,
+        'divergencias_valor': divergencias_valor,
         'itens_corretos': itens_corretos
     }
 
