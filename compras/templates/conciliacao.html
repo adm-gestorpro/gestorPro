@@ -15,11 +15,9 @@
                 <i class="fa-solid fa-right-left text-primary-500"></i> Conciliação de Entrada
             </h2>
 
-            <!-- Formulário de Busca -->
             <form method="POST" action="{% url 'conciliacao' %}" class="space-y-4">
                 {% csrf_token %}
                 
-                <!-- Seleção de Loja -->
                 <div>
                     <label for="loja" class="block mb-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
                         Loja de Destino
@@ -27,7 +25,6 @@
                     <select id="loja" name="loja" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-slate-800 dark:border-slate-700 dark:placeholder-slate-400 dark:text-white" required>
                         <option value="" disabled {% if not loja_selecionada %}selected{% endif %}>Selecione a Loja...</option>
                         {% for loja in lojas %}
-                            <!-- Importante: O value deve corresponder à lojaKey que vem da API -->
                             <option value="{{ loja.id }}" {% if loja_selecionada == loja.id|stringformat:"s" %}selected{% endif %}>
                                 Loja {{ loja.nome_fantasia }}
                             </option>
@@ -35,7 +32,6 @@
                     </select>
                 </div>
 
-                <!-- Campo de Pedidos Múltiplos -->
                 <div>
                     <label for="numero_pedido" class="block mb-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
                         Nº dos Pedidos de Compra
@@ -46,7 +42,6 @@
                     <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Para múltiplos pedidos, separe os números por vírgula.</p>
                 </div>
 
-                <!-- Chave da NF-e -->
                 <div>
                     <label for="chave_acesso" class="block mb-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
                         Chave de Acesso da NF-e
@@ -83,17 +78,29 @@
                 </div>
             </div>
 
-            {% if analise.impacto_financeiro_total %}
+            {% if analise.impacto_financeiro_total > 0 or analise.total_divergencias > 0 %}
             <div class="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-lg p-4 text-red-800 dark:text-red-300">
-                <div class="flex items-center justify-between mb-1">
-                    <span class="text-xs font-bold uppercase tracking-wide">Impacto Financeiro</span>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold uppercase tracking-wide">Impacto Financeiro Total</span>
                     <i class="fa-solid fa-triangle-exclamation text-base text-red-500"></i>
                 </div>
-                <div class="text-2xl font-black mb-1">
+                <div class="text-2xl font-black mb-3 pb-3 border-b border-red-200 dark:border-red-800/50">
                     R$ {{ analise.impacto_financeiro_total|floatformat:2 }}
                 </div>
-                <p class="text-xs opacity-90 leading-relaxed">
-                    Valor faturado divergente do pedido. Isso afeta diretamente a regra de <strong>margem</strong> estabelecida para a precificação.
+                
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div class="bg-white/50 dark:bg-black/20 p-2 rounded border border-red-200 dark:border-red-900/50">
+                        <span class="block text-[10px] font-bold uppercase opacity-80 mb-0.5">Por Quantidade</span>
+                        <span class="font-bold text-red-700 dark:text-red-400">R$ {{ analise.impacto_financeiro_qtd|floatformat:2 }}</span>
+                    </div>
+                    <div class="bg-white/50 dark:bg-black/20 p-2 rounded border border-red-200 dark:border-red-900/50">
+                        <span class="block text-[10px] font-bold uppercase opacity-80 mb-0.5">Por Valor</span>
+                        <span class="font-bold text-red-700 dark:text-red-400">R$ {{ analise.impacto_financeiro_valor|floatformat:2 }}</span>
+                    </div>
+                </div>
+                
+                <p class="text-xs opacity-90 leading-relaxed mt-3">
+                    Valor faturado divergente do pedido. Isso afeta diretamente a regra de <strong>margem</strong> estabelecida.
                 </p>
             </div>
             {% endif %}
@@ -112,12 +119,16 @@
                     <p class="text-xs text-slate-500 dark:text-slate-400">Comparativo do Pedido #{{ pedido_id }} com o XML recebido.</p>
                 </div>
                 
+                <!-- Novos filtros divididos -->
                 <div class="inline-flex rounded-lg shadow-sm" role="group">
-                    <button type="button" onclick="filtrarTabela('todos')" id="btn-todos" class="px-3 py-1.5 text-xs font-medium text-slate-900 bg-slate-100 border border-slate-200 rounded-l-lg hover:bg-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:hover:bg-slate-700">
+                    <button type="button" onclick="filtrarTabela('todos')" id="btn-todos" class="px-3 py-1.5 text-xs font-bold text-slate-900 bg-slate-100 border border-slate-200 rounded-l-lg hover:bg-slate-200 dark:bg-slate-700 dark:border-slate-700 dark:text-white dark:hover:bg-slate-600">
                         Todos
                     </button>
-                    <button type="button" onclick="filtrarTabela('divergentes')" id="btn-divergentes" class="px-3 py-1.5 text-xs font-medium text-red-600 bg-white border-t border-b border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-red-400 dark:hover:bg-slate-700">
-                        Divergentes ({{ analise.total_divergencias }})
+                    <button type="button" onclick="filtrarTabela('qtd')" id="btn-qtd" class="px-3 py-1.5 text-xs font-medium text-orange-600 bg-white border-t border-b border-l border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-orange-400 dark:hover:bg-slate-700">
+                        Qtd ({{ analise.total_divergencias_qtd }})
+                    </button>
+                    <button type="button" onclick="filtrarTabela('valor')" id="btn-valor" class="px-3 py-1.5 text-xs font-medium text-red-600 bg-white border-t border-b border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-red-400 dark:hover:bg-slate-700">
+                        Valor ({{ analise.total_divergencias_valor }})
                     </button>
                     <button type="button" onclick="filtrarTabela('corretos')" id="btn-corretos" class="px-3 py-1.5 text-xs font-medium text-emerald-600 bg-white border border-slate-200 rounded-r-lg hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-emerald-400 dark:hover:bg-slate-700">
                         Corretos ({{ analise.total_corretos }})
@@ -133,13 +144,47 @@
                             <th scope="col" class="px-4 py-3">Produto</th>
                             <th scope="col" class="px-4 py-3 text-center">Qtd. (NF / Ped)</th>
                             <th scope="col" class="px-4 py-3 text-right">Vlr. Unitário (NF / Ped)</th>
+                            <th scope="col" class="px-4 py-3 text-right">Impacto R$</th>
                             <th scope="col" class="px-4 py-3 text-center">Status</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-                        <!-- Itens Divergentes -->
-                        {% for item in analise.divergencias %}
-                        <tr class="linha-item linha-divergente bg-red-50/50 dark:bg-red-950/20 hover:bg-red-100/50 dark:hover:bg-red-950/30 transition-colors">
+                        
+                        <!-- Itens Divergentes: QUANTIDADE -->
+                        {% for item in analise.divergencias_qtd %}
+                        <tr class="linha-item linha-qtd bg-orange-50/40 dark:bg-orange-950/20 hover:bg-orange-100/50 dark:hover:bg-orange-950/30 transition-colors">
+                            <td class="px-4 py-3">
+                                <span class="block text-xs text-slate-400">Ref: {{ item.codigo_fornecedor }}</span>
+                                <span class="font-bold text-slate-800 dark:text-slate-200">{{ item.ean }}</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="font-semibold text-slate-900 dark:text-white block">{{ item.descricao }}</span>
+                                <span class="text-xs font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1 mt-0.5">
+                                    <i class="fa-solid fa-scale-unbalanced"></i> {{ item.motivo_divergencia }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="block text-orange-600 dark:text-orange-400 font-bold">NF: {{ item.qtd_nf|floatformat:0 }}</span>
+                                <span class="block text-xs text-slate-400">Ped: {{ item.qtd_pedido|floatformat:0 }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <span class="block text-slate-700 dark:text-slate-300 font-medium">NF: R$ {{ item.valor_nf|floatformat:2 }}</span>
+                                <span class="block text-xs text-slate-400">Ped: R$ {{ item.valor_pedido|floatformat:2 }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-right font-bold text-orange-600 dark:text-orange-400">
+                                {% if item.impacto > 0 %} + {% endif %} R$ {{ item.impacto|floatformat:2 }}
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-400 whitespace-nowrap">
+                                    Div. Qtd
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                        <!-- Itens Divergentes: VALOR -->
+                        {% for item in analise.divergencias_valor %}
+                        <tr class="linha-item linha-valor bg-red-50/40 dark:bg-red-950/20 hover:bg-red-100/50 dark:hover:bg-red-950/30 transition-colors">
                             <td class="px-4 py-3">
                                 <span class="block text-xs text-slate-400">Ref: {{ item.codigo_fornecedor }}</span>
                                 <span class="font-bold text-slate-800 dark:text-slate-200">{{ item.ean }}</span>
@@ -147,20 +192,23 @@
                             <td class="px-4 py-3">
                                 <span class="font-semibold text-slate-900 dark:text-white block">{{ item.descricao }}</span>
                                 <span class="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1 mt-0.5">
-                                    <i class="fa-solid fa-circle-exclamation"></i> {{ item.motivo_divergencia }}
+                                    <i class="fa-solid fa-money-bill-wave"></i> {{ item.motivo_divergencia }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-center">
-                                <span class="block text-red-600 dark:text-red-400 font-bold">NF: {{ item.qtd_nf|floatformat:0 }}</span>
+                                <span class="block text-slate-700 dark:text-slate-300 font-medium">NF: {{ item.qtd_nf|floatformat:0 }}</span>
                                 <span class="block text-xs text-slate-400">Ped: {{ item.qtd_pedido|floatformat:0 }}</span>
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <span class="block text-red-600 dark:text-red-400 font-bold">NF: R$ {{ item.valor_nf|floatformat:2 }}</span>
                                 <span class="block text-xs text-slate-400">Ped: R$ {{ item.valor_pedido|floatformat:2 }}</span>
                             </td>
+                            <td class="px-4 py-3 text-right font-bold text-red-600 dark:text-red-400">
+                                {% if item.impacto > 0 %} + {% endif %} R$ {{ item.impacto|floatformat:2 }}
+                            </td>
                             <td class="px-4 py-3 text-center">
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400">
-                                    Divergente
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400 whitespace-nowrap">
+                                    Div. Valor
                                 </span>
                             </td>
                         </tr>
@@ -182,8 +230,11 @@
                             <td class="px-4 py-3 text-right">
                                 <span class="block text-slate-700 dark:text-slate-300 font-medium">R$ {{ item.preco_unitario|floatformat:2 }}</span>
                             </td>
+                            <td class="px-4 py-3 text-right font-medium text-slate-400">
+                                -
+                            </td>
                             <td class="px-4 py-3 text-center">
-                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400 whitespace-nowrap">
                                     <i class="fa-solid fa-circle-check"></i> OK
                                 </span>
                             </td>
@@ -216,37 +267,31 @@
     </div>
 </div>
 
-<!-- Script para controle dos filtros da tabela -->
+<!-- Script para controle dos novos filtros da tabela -->
 <script>
 function filtrarTabela(tipo) {
     const linhas = document.querySelectorAll('.linha-item');
-    const btnTodos = document.getElementById('btn-todos');
-    const btnDivergentes = document.getElementById('btn-divergentes');
-    const btnCorretos = document.getElementById('btn-corretos');
+    const botoes = ['btn-todos', 'btn-qtd', 'btn-valor', 'btn-corretos'];
 
-    // Reseta estilos básicos dos botões
-    [btnTodos, btnDivergentes, btnCorretos].forEach(b => {
-        b.classList.remove('bg-slate-100', 'dark:bg-slate-700', 'font-bold');
+    // Reseta todos os botões para o estado inativo
+    botoes.forEach(id => {
+        const btn = document.getElementById(id);
+        if(btn) btn.classList.remove('bg-slate-100', 'dark:bg-slate-700', 'font-bold');
     });
 
     linhas.forEach(linha => {
         if (tipo === 'todos') {
             linha.style.display = '';
-            btnTodos.classList.add('bg-slate-100', 'dark:bg-slate-700', 'font-bold');
-        } else if (tipo === 'divergentes') {
-            if (linha.classList.contains('linha-divergente')) {
-                linha.style.display = '';
-            } else {
-                linha.style.display = 'none';
-            }
-            btnDivergentes.classList.add('bg-slate-100', 'dark:bg-slate-700', 'font-bold');
+            document.getElementById('btn-todos').classList.add('bg-slate-100', 'dark:bg-slate-700', 'font-bold');
+        } else if (tipo === 'qtd') {
+            linha.style.display = linha.classList.contains('linha-qtd') ? '' : 'none';
+            document.getElementById('btn-qtd').classList.add('bg-slate-100', 'dark:bg-slate-700', 'font-bold');
+        } else if (tipo === 'valor') {
+            linha.style.display = linha.classList.contains('linha-valor') ? '' : 'none';
+            document.getElementById('btn-valor').classList.add('bg-slate-100', 'dark:bg-slate-700', 'font-bold');
         } else if (tipo === 'corretos') {
-            if (linha.classList.contains('linha-correto')) {
-                linha.style.display = '';
-            } else {
-                linha.style.display = 'none';
-            }
-            btnCorretos.classList.add('bg-slate-100', 'dark:bg-slate-700', 'font-bold');
+            linha.style.display = linha.classList.contains('linha-correto') ? '' : 'none';
+            document.getElementById('btn-corretos').classList.add('bg-slate-100', 'dark:bg-slate-700', 'font-bold');
         }
     });
 }

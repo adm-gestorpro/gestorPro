@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+{% load auth_extras %}
+
+{% block title %}Início | GestorPro{% endblock %}
+{% block page_name %}Visão Geral{% endblock %}
+
+{% block content %}
+<div class="space-y-8 animate-fade-in">
+    
+    <!-- Seção: Boas-vindas e Últimas Rotinas -->
+    <section class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 relative overflow-hidden">
+        <!-- Efeito visual de fundo (Opcional para SaaS Moderno) -->
+        <div class="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-primary-500/10 dark:bg-primary-500/5 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <div class="relative z-10">
+            <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                Olá, {% if request.user.is_authenticated %}{{ request.user.first_name|default:request.user.username }}{% else %}Administrador{% endif %}!
+            </h2>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">
+                Bem-vindo de volta ao GestorPro. Aqui estão os seus acessos mais recentes.
+            </p>
+
+            <!-- Lista de Acessos Recentes (Pode ser populada dinamicamente via context do Django) -->
+            <div class="flex flex-wrap gap-3">
+                <a href="{% url 'listar_produtos' %}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-primary-50 border border-slate-200 hover:border-primary-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 dark:border-slate-700 dark:hover:border-primary-900/50 rounded-lg text-sm font-semibold text-slate-700 hover:text-primary-600 dark:text-slate-300 dark:hover:text-primary-400 transition-all shadow-sm">
+                    <i class="fa-solid fa-barcode text-primary-500"></i>
+                    <span>Consultar Produtos</span>
+                </a>
+
+                <a href="{% url 'controle_validade' %}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-primary-50 border border-slate-200 hover:border-primary-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 dark:border-slate-700 dark:hover:border-primary-900/50 rounded-lg text-sm font-semibold text-slate-700 hover:text-primary-600 dark:text-slate-300 dark:hover:text-primary-400 transition-all shadow-sm">
+                    <i class="fa-solid fa-barcode text-primary-500"></i>
+                    <span>Controle de validade</span>
+                </a>
+                
+                <a href="{% url 'pedido' %}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-primary-50 border border-slate-200 hover:border-primary-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 dark:border-slate-700 dark:hover:border-primary-900/50 rounded-lg text-sm font-semibold text-slate-700 hover:text-primary-600 dark:text-slate-300 dark:hover:text-primary-400 transition-all shadow-sm">
+                    <i class="fa-solid fa-cart-arrow-down text-primary-500"></i>
+                    <span>Meus Pedidos</span>
+                </a>
+
+                <a href="{% url 'ticket_list' %}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-primary-50 border border-slate-200 hover:border-primary-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 dark:border-slate-700 dark:hover:border-primary-900/50 rounded-lg text-sm font-semibold text-slate-700 hover:text-primary-600 dark:text-slate-300 dark:hover:text-primary-400 transition-all shadow-sm">
+                    <i class="fa-solid fa-headset text-primary-500"></i>
+                    <span>Chamados</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Seção: Hub de Módulos Permitidos -->
+    <section>
+        <div class="mb-5 flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white">Módulos do Sistema</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Acesse as rotinas disponíveis para o seu perfil de usuário.</p>
+            </div>
+        </div>
+
+        <!-- Grid de 4 Colunas para Desktop -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+
+            <!-- Card: Produtos -->
+            <div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col hover:shadow-md transition-shadow group">
+                <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-barcode text-lg"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-900 dark:text-white">Produtos</h4>
+                </div>
+                <div class="p-4 flex-1 bg-slate-50/50 dark:bg-slate-800/20">
+                    <div class="flex flex-col space-y-1">
+                        {% if request.user|has_any_group:"Administrador,Gerente de Loja,Gerente Distrital" %}
+                        <a href="#" class="px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-white dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 flex items-center justify-between transition-colors">
+                            <span>Cadastrar Novo</span>
+                            <i class="fa-solid fa-arrow-right opacity-0 group-hover/link:opacity-100 text-xs"></i>
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'listar_produtos' %}" onclick="showLoading();" class="px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-white dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 flex items-center justify-between transition-colors">
+                            <span>Consultar</span>
+                        </a>
+                        <a href="{% url 'controle_validade' %}" onclick="showLoading();" class="px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-white dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 flex items-center justify-between transition-colors">
+                            <span>Controle de Validade</span>
+                        </a>
+                        <a href="{% url 'ruptura_list' %}" onclick="showLoading();" class="px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-white dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 flex items-center justify-between transition-colors">
+                            <span>Rupturas</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card: Fornecedores -->
+            <div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col hover:shadow-md transition-shadow group">
+                <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-address-card text-lg"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-900 dark:text-white">Fornecedores</h4>
+                </div>
+                <div class="p-4 flex-1 bg-slate-50/50 dark:bg-slate-800/20">
+                    <div class="flex flex-col space-y-1">
+                        <a href="{% url 'listar_fornecedores' %}" onclick="showLoading();" class="px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-white dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 flex items-center justify-between transition-colors">
+                            <span>Consultar</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card: Compras (Com validação de permissão) -->
+            {% if request.user|has_any_group:"Administrador,Diretoria,Comprador" %}
+            <div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col hover:shadow-md transition-shadow group">
+                <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-cart-arrow-down text-lg"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-900 dark:text-white">Compras</h4>
+                </div>
+                <div class="p-4 flex-1 bg-slate-50/50 dark:bg-slate-800/20">
+                    <div class="flex flex-col space-y-1">
+                        <a href="{% url 'pedido' %}" onclick="showLoading();" class="px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-white dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 flex items-center justify-between transition-colors">
+                            <span>Gestão de Pedidos</span>
+                        </a>
+                        <a href="#" onclick="showLoading();" class="px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-white dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 flex items-center justify-between transition-colors">
+                            <span>Notas Fiscais (Entrada)</span>
+                        </a>
+                        <a href="{% url 'conciliacao' %}" onclick="showLoading();" class="px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-white dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 flex items-center justify-between transition-colors">
+                            <span>Divergência NF-e x Pedido</span>
+                        </a>
+                        <a href="{% url 'comparativo' %}" onclick="showLoading();" class="px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-white dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 flex items-center justify-between transition-colors">
+                            <span>Comparativo de Preços</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Card: Vendas -->
+            <div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col hover:shadow-md transition-shadow group">
+                <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-tag text-lg"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-900 dark:text-white">Vendas</h4>
+                </div>
+                <div class="p-4 flex-1 bg-slate-50/50 dark:bg-slate-800/20">
+                    <div class="flex flex-col space-y-1">
+                        <a href="{% url 'dashboard' %}" onclick="showLoading();" class="px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-white dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 flex items-center justify-between transition-colors">
+                            <span>Relatório de Vendas</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card: Atendimento -->
+            <div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col hover:shadow-md transition-shadow group">
+                <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-headset text-lg"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-900 dark:text-white">Atendimento</h4>
+                </div>
+                <div class="p-4 flex-1 bg-slate-50/50 dark:bg-slate-800/20">
+                    <div class="flex flex-col space-y-1">
+                        <a href="{% url 'ticket_list' %}" onclick="showLoading();" class="px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-white dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 flex items-center justify-between transition-colors">
+                            <span>Central de Chamados</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card: Gestão (Exclusivo Administrador) -->
+            {% if request.user|has_any_group:"Administrador" %}
+            <div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col hover:shadow-md transition-shadow group">
+                <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-users-gear text-lg"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-900 dark:text-white">Gestão e Sistema</h4>
+                </div>
+                <div class="p-4 flex-1 bg-slate-50/50 dark:bg-slate-800/20">
+                    <div class="flex flex-col space-y-1">
+                        <a href="{% url 'atualizacoes' %}" onclick="showLoading();" class="px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-white dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 flex items-center justify-between transition-colors">
+                            <span>Atualizações</span>
+                        </a>
+                        <a href="/admin" onclick="showLoading();" class="px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-white dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 flex items-center justify-between transition-colors">
+                            <span>Painel Administrativo</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Adicione scripts específicos desta página aqui, se necessário -->
+<style>
+    /* Animação suave na entrada dos cards */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+</style>
+{% endblock %}

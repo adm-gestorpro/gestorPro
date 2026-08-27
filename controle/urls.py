@@ -19,6 +19,7 @@ urlpatterns = [
     path('atualizar_vendedores', views.atualizar_vendedores, name='atualizar_vendedores'),
     path('atualizar_venda_online', views.atualizar_venda_online, name='atualizar_venda_online'),
     path('atualizar_pedido_balcao', views.atualizar_pedido_balcao, name='atualizar_pedido_balcao'),
+    path('atualizar_arvore_mercadologica', views.atualizar_arvore_mercadologica, name='atualizar_arvore_mercadologica'),
     path('dashboard', views.dashboard, name='dashboard'),
     path('agenda', views.agenda, name='agenda'),
     path('usuario/perfil', views.perfil_usuario, name='perfil_usuario'),
