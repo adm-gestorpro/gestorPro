@@ -45,7 +45,7 @@
             <form method="POST" action="{% url 'login_view' %}" class="space-y-5">
                 {% csrf_token %}
                 <div>
-                    <label for="username" class="block text-sm font-medium text-slate-300 mb-2">Usuário ou E-mail</label>
+                    <label for="username" class="block text-sm font-medium text-slate-300 mb-2">Usuário</label>
                     <input type="text" name="username" id="username" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-3 transition-colors" required>
                 </div>
 
