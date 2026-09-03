@@ -216,7 +216,7 @@ def controle_validade(request):
     filtro_loja = request.GET.get('loja', '').strip()
     query = request.GET.get('q', '').strip()
     per_page = request.GET.get('per_page', '50')
-    if per_page not in ['50', '100', '200', '500', '1000']: 
+    if per_page not in ['50', '100', '200', '500', '1000', '2000', '5000', '10000']: 
         per_page = '50'
 
     hoje = date.today()
