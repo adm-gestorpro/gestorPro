@@ -365,7 +365,7 @@
         // 1. Se for Gestor, Comprador ou Admin: Acesso aos status gerenciais
         if (E_GESTOR_OU_COMPRADOR) {
             select.appendChild(new Option('Em Aberto', 'EM_ABERTO'));
-            select.appendChild(new Option('Aguardando Fornecedor', 'AGUARDANDO_FORNECEDOR'));
+            select.appendChild(new Option('Pedido Feito', 'AGUARDANDO_FORNECEDOR'));
             select.appendChild(new Option('Resolvido', 'RESOLVIDO'));
             select.appendChild(new Option('Cancelado', 'CANCELADO'));
             
