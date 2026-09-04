@@ -68,7 +68,7 @@
                 <select name="status" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-blue-500 focus:border-blue-500">
                     <option value="">Todos os Status</option>
                     <option value="EM_ABERTO" {% if filtro_status == 'EM_ABERTO' %}selected{% endif %}>Em Aberto</option>
-                    <option value="AGUARDANDO_FORNECEDOR" {% if filtro_status == 'AGUARDANDO_FORNECEDOR' %}selected{% endif %}>Aguardando Fornecedor</option>
+                    <option value="AGUARDANDO_FORNECEDOR" {% if filtro_status == 'AGUARDANDO_FORNECEDOR' %}selected{% endif %}>Pedido Feito</option>
                     <option value="RESOLVIDO" {% if filtro_status == 'RESOLVIDO' %}selected{% endif %}>Resolvido</option>
                     <option value="FINALIZADO" {% if filtro_status == 'FINALIZADO' %}selected{% endif %}>Finalizado</option>
                     <option value="CANCELADO" {% if filtro_status == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
