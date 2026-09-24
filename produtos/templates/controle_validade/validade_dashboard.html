@@ -276,10 +276,10 @@
                     {% for item in page_obj %}
                     <tr class="product-row flex flex-col md:table-row border border-slate-200 dark:border-slate-700 md:border-none rounded-xl md:rounded-none overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50 md:divide-y-0 hover:bg-white md:hover:bg-slate-50/50 dark:hover:bg-slate-750/30 transition-colors bg-white dark:bg-slate-800 shadow-sm md:shadow-none"
                         data-search="{{ item.id_produto.desc_produto|escape }} {{ item.id_produto.cod_produto|escape }} {{ item.id_produto.cod_gtin_principal|escape }} {{ item.num_lote|escape }} {{ item.lancado_por_nome|escape }} loja {{ item.cod_loja.cod_loja|escape }} {% if item.promocao_ativa %}promocao ativa{% endif %}"
-                        data-export-cod-interno="{{ item.id_produto.cod_produto|escape }}"
-                        data-export-ean="{{ item.id_produto.cod_gtin_principal|escape }}"
                         data-export-produto="{{ item.id_produto.desc_produto|escape }}"
+                        data-export-ean="{{ item.id_produto.cod_gtin_principal|escape }}"
                         data-export-gtins-disponiveis="{{ item.id_produto.cod_gtins_disponiveis|default:''|escape }}"
+                        data-export-cod-interno="{{ item.id_produto.cod_produto|escape }}"
                         data-export-gtin-validade=""
                         data-export-lancado-por="{{ item.lancado_por_nome|escape }}"
                         data-export-data-cadastro="{{ item.data_cadastro|date:'d/m/Y H:i' }}"
@@ -978,11 +978,11 @@
                 return;
             }
 
-            const dados = linhasColetadas.map(row => ({
-                'Código interno': row.dataset.exportCodInterno || '',
-                'EAN': row.dataset.exportEan || '',
+            const dados = linhasColetadas.map(row => ({                
                 'Produto': row.dataset.exportProduto || '',
+                'EAN': row.dataset.exportEan || '',
                 'GTIN validade': row.dataset.exportGtinValidade || '',
+                'Código interno': row.dataset.exportCodInterno || '',
                 'Lançado por': row.dataset.exportLancadoPor || '',
                 'Data de cadastro': row.dataset.exportDataCadastro || '',
                 'Loja': row.dataset.exportLoja || '',
@@ -1002,10 +1002,10 @@
             const ws = XLSX.utils.json_to_sheet(dados);
 
             ws['!cols'] = [
-                { wch: 13 },
-                { wch: 15 },
                 { wch: 90 },
                 { wch: 15 },
+                { wch: 15 },
+                { wch: 13 },
                 { wch: 17 },
                 { wch: 15 },
                 { wch: 5 },
