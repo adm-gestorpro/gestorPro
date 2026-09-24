@@ -191,14 +191,16 @@ def api_buscar_produtos(request):
     ).filter(
         Q(desc_produto__icontains=termo) |
         Q(cod_produto__icontains=termo) |
-        Q(cod_gtin_principal__icontains=termo)
-    ).only('cod_produto', 'desc_produto', 'cod_gtin_principal')
+        Q(cod_gtin_principal__icontains=termo) |
+        Q(cod_gtins_disponiveis__icontains=termo)
+    ).only('cod_produto', 'desc_produto', 'cod_gtin_principal', 'cod_gtins_disponiveis')
 
     resultados = [
         {
             'id': p.cod_produto,
             'nome': p.desc_produto,
             'codigo_interno': p.cod_produto,
+            'gtin_validade': p.cod_gtins_disponiveis,
             'codigo_barras': p.cod_gtin_principal or ''
         }
         for p in produtos
